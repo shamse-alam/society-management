@@ -1,0 +1,207 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* Semantic layout colors */
+  --color-card: var(--c-card);
+  --color-card-alt: var(--c-card-alt);
+  --color-card-hover: var(--c-card-hover);
+  --color-body: var(--c-body);
+  --color-heading: var(--c-heading);
+  --color-sub: var(--c-sub);
+  --color-muted: var(--c-muted);
+  --color-border: var(--c-border);
+  --color-input-bg: var(--c-input-bg);
+  --color-input-border: var(--c-input-border);
+  --color-sidebar: var(--c-sidebar);
+  --color-sidebar-hover: var(--c-sidebar-hover);
+  --color-topbar: var(--c-topbar);
+
+  /* Primary blue scale — HDFC-inspired navy-to-blue */
+  --color-indigo-50: #edf5ff;
+  --color-indigo-100: #d6e8ff;
+  --color-indigo-200: #aed0fb;
+  --color-indigo-300: #78b1f0;
+  --color-indigo-400: #4a94e0;
+  --color-indigo-500: #2b7ad4;
+  --color-indigo-600: #1a6dd1;
+  --color-indigo-700: #155bab;
+  --color-indigo-800: #104885;
+  --color-indigo-900: #0d3b66;
+  --color-indigo-950: #0a1628;
+}
+
+:root {
+  --c-card: #ffffff;
+  --c-card-alt: #f4f6f9;
+  --c-card-hover: #edf2f9;
+  --c-body: #f9fbfd;
+  --c-heading: #25282d;
+  --c-sub: #506176;
+  --c-muted: #8d9db5;
+  --c-border: #e3ebf6;
+  --c-input-bg: #ffffff;
+  --c-input-border: #d9e1ec;
+  --c-sidebar: #ffffff;
+  --c-sidebar-hover: #f4f6f9;
+  --c-topbar: #ffffff;
+}
+
+.dark {
+  --c-card: #1e2538;
+  --c-card-alt: #171d2e;
+  --c-card-hover: #252d42;
+  --c-body: #141824;
+  --c-heading: #d9e1ec;
+  --c-sub: #a4b4c8;
+  --c-muted: #6b7e96;
+  --c-border: #2a3248;
+  --c-input-bg: #1e2538;
+  --c-input-border: #2a3248;
+  --c-sidebar: #1e2538;
+  --c-sidebar-hover: #252d42;
+  --c-topbar: #1e2538;
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--c-body);
+  color: var(--c-heading);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: 0.875rem;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--c-muted); border-radius: 3px; opacity: 0.4; }
+::-webkit-scrollbar-thumb:hover { background: var(--c-sub); }
+
+/* Smooth transitions for theme switching */
+*, *::before, *::after {
+  transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+/* Card shadow (Approx style) - applied to all cards and tables */
+.card-shadow,
+.bg-card {
+  box-shadow: 0 0.75rem 1.5rem rgba(0, 0, 0, 0.03);
+}
+.dark .bg-card {
+  box-shadow: 0 0.75rem 1.5rem rgba(0, 0, 0, 0.1);
+}
+
+/* Stat card hover lift */
+.stat-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.06);
+}
+.dark .stat-card:hover {
+  box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.15);
+}
+
+/* Primary button shadow */
+.btn-primary {
+  box-shadow: 0 1px 2px 0 rgba(26, 109, 209, 0.3);
+  transition: all 0.12s ease;
+}
+.btn-primary:hover {
+  box-shadow: 0 3px 10px 0 rgba(26, 109, 209, 0.3);
+  transform: translateY(-1px);
+}
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px 0 rgba(26, 109, 209, 0.3);
+}
+
+/* Outline button hover lift */
+.btn-outline {
+  transition: all 0.12s ease;
+}
+.btn-outline:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  transform: translateY(-1px);
+}
+
+/* Table styling (Approx style) */
+table {
+  border-collapse: collapse;
+}
+.divide-border > :not(:last-child) {
+  border-bottom-style: dashed;
+}
+thead tr {
+  border-bottom-style: solid !important;
+}
+
+/* Scrollable table container with sticky headers */
+.table-container {
+  max-height: 520px;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+.table-container thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+/* Larger table for pages with fewer charts */
+.table-container-lg {
+  max-height: 640px;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+.table-container-lg thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+/* Input focus glow (Approx style) */
+input:focus, select:focus, textarea:focus {
+  box-shadow: 0 0 0 3px rgba(26, 109, 209, 0.1);
+}
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton-shimmer {
+  background: linear-gradient(90deg, var(--c-card-alt) 25%, var(--c-card-hover) 50%, var(--c-card-alt) 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Badge pulse animation for notification dot */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* Reduced motion — respect OS accessibility setting */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .skeleton-shimmer {
+    animation: none;
+    background: var(--c-card-alt);
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print { display: none !important; }
+}
