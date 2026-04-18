@@ -3,13 +3,14 @@ package com.society.management.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "vendor_bank_accounts")
 @Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
-@Builder
-public class VendorBankAccount {
+@NoArgsConstructor
+@SuperBuilder
+public class VendorBankAccount extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

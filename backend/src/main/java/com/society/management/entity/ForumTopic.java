@@ -2,22 +2,24 @@ package com.society.management.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "forum_topics")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class ForumTopic {
+@Getter @Setter @NoArgsConstructor
+@SuperBuilder
+public class ForumTopic extends BaseEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String title;
-    private String category; // GENERAL, MAINTENANCE, SECURITY, EVENTS, SUGGESTIONS, OTHER
+    private String category;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by")
-    private User createdBy;
+    @JoinColumn(name = "author_id")
+    private User author;
 
     @Builder.Default
     private boolean pinned = false;
@@ -31,6 +33,4 @@ public class ForumTopic {
 
     @Builder.Default
     private LocalDateTime lastActivityAt = LocalDateTime.now();
-    @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
 }

@@ -49,6 +49,8 @@ public class SocietyConfigService {
         if (request.getRegistrationNumber() != null) config.setRegistrationNumber(request.getRegistrationNumber());
         if (request.getPropertyTypes() != null) config.setPropertyTypes(String.join(",", request.getPropertyTypes()));
         if (request.getPropertyLabel() != null) config.setPropertyLabel(request.getPropertyLabel());
+        if (request.getExpenseApprovalRoles() != null) config.setExpenseApprovalRoles(String.join(",", request.getExpenseApprovalRoles()));
+        if (request.getExpenseApprovalCount() != null) config.setExpenseApprovalCount(request.getExpenseApprovalCount());
         return SocietyConfigResponse.from(repository.save(config));
     }
 

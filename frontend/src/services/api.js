@@ -90,10 +90,21 @@ export const adminAPI = {
   getAllDailyHelp: () => api.get('/admin/daily-help'),
 
   getExpenses: () => api.get('/admin/expenses'),
+  getExpensesByStatus: (status) => api.get(`/admin/expenses/status/${status}`),
   updateExpense: (id, data) => api.put(`/admin/expenses/${id}`, data),
   createExpense: (data) => api.post('/admin/expenses', data),
   deleteExpense: (id) => api.delete(`/admin/expenses/${id}`),
+  approveExpense: (id) => api.put(`/admin/expenses/${id}/approve`),
+  markExpensePaid: (id, data) => api.put(`/admin/expenses/${id}/pay`, data),
+  cancelExpense: (id) => api.put(`/admin/expenses/${id}/cancel`),
+  uploadBill: (id, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post(`/admin/expenses/${id}/bill`, formData);
+  },
+  generateMonthlyVouchers: (year, month) => api.post(`/admin/expenses/generate-monthly?year=${year}&month=${month}`),
   getExpensesByVendor: (vendorId) => api.get(`/admin/expenses/vendor/${vendorId}`),
+  getVendorsByType: (type) => api.get(`/admin/vendors/type/${type}`),
   getBalanceSheet: (from, to) => api.get('/admin/balance-sheet', { params: { from, to } }),
 
   generateInvoices: (data) => api.post('/admin/invoices/generate', data),

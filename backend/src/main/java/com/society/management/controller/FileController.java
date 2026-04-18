@@ -59,6 +59,12 @@ public class FileController {
         return serveFile(filePath, filename);
     }
 
+    @GetMapping("/bills/{filename}")
+    public ResponseEntity<Resource> getBillAttachment(@PathVariable String filename) {
+        Path filePath = Path.of("./uploads/bills").resolve(filename);
+        return serveFile(filePath, filename);
+    }
+
     private ResponseEntity<Resource> serveFile(Path filePath, String filename) {
         try {
             Resource resource = new UrlResource(filePath.toUri());

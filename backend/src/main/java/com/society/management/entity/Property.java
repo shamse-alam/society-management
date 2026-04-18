@@ -3,15 +3,14 @@ package com.society.management.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
-
-import java.time.LocalDateTime;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "properties")
 @Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
-@Builder
-public class Property {
+@NoArgsConstructor
+@SuperBuilder
+public class Property extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,14 +35,4 @@ public class Property {
     private String propertyType;
 
     private String description;
-
-    @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
-
-    private LocalDateTime updatedAt;
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 }

@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { adminAPI } from '../services/api';
 import Modal from '../components/Modal';
 import { Plus, Pencil, Trash2, Search, Upload, Store, Landmark, Save } from 'lucide-react';
+import { useConfirm } from '../context/ConfirmContext';
 import { useNavigate } from 'react-router-dom';
 
 const VENDOR_CATEGORIES = [
@@ -38,12 +39,13 @@ function VendorAvatar({ name, src }) {
 }
 
 export default function VendorManagement() {
+  const confirm = useConfirm();
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editId, setEditId] = useState(null);
   const emptyAccount = { accountHolderName: '', accountNumber: '', ifscCode: '', bankName: '', branchName: '' };
-  const [form, setForm] = useState({ name: '', category: 'GARDENER', phone: '', email: '', address: '', active: true, bankAccounts: [] });
+  const [form, setForm] = useState({ name: '', category: 'GARDENER', phone: '', email: '', address: '', active: true, vendorType: 'OTHER', monthlyAmount: '', contractStartDate: '', contractEndDate: '', gstNumber: '', bankAccounts: [] });
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -64,14 +66,14 @@ export default function VendorManagement() {
 
   const openAddModal = () => {
     setEditId(null);
-    setForm({ name: '', category: 'GARDENER', phone: '', email: '', address: '', active: true, bankAccounts: [] });
+    setForm({ name: '', category: 'GARDENER', phone: '', email: '', address: '', active: true, vendorType: 'OTHER', monthlyAmount: '', contractStartDate: '', contractEndDate: '', gstNumber: '', bankAccounts: [] });
     setLogoFile(null); setLogoPreview(null);
     setError(''); setModalOpen(true);
   };
 
   const openEditModal = (vendor) => {
     setEditId(vendor.id);
-    setForm({ name: vendor.name, category: vendor.category, phone: vendor.phone || '', email: vendor.email || '', address: vendor.address || '', active: vendor.active, bankAccounts: vendor.bankAccounts?.map(ba => ({ id: ba.id, accountHolderName: ba.accountHolderName || '', accountNumber: ba.accountNumber || '', ifscCode: ba.ifscCode || '', bankName: ba.bankName || '', branchName: ba.branchName || '' })) || [] });
+    setForm({ name: vendor.name, category: vendor.category, phone: vendor.phone || '', email: vendor.email || '', address: vendor.address || '', active: vendor.active, vendorType: vendor.vendorType || 'OTHER', monthlyAmount: vendor.monthlyAmount || '', contractStartDate: vendor.contractStartDate || '', contractEndDate: vendor.contractEndDate || '', gstNumber: vendor.gstNumber || '', bankAccounts: vendor.bankAccounts?.map(ba => ({ id: ba.id, accountHolderName: ba.accountHolderName || '', accountNumber: ba.accountNumber || '', ifscCode: ba.ifscCode || '', bankName: ba.bankName || '', branchName: ba.branchName || '' })) || [] });
     setLogoFile(null); setLogoPreview(vendor.logoImage || null);
     setError(''); setModalOpen(true);
   };
@@ -105,7 +107,7 @@ export default function VendorManagement() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this vendor?')) return;
+    if (!await confirm({ title: 'Delete Vendor', message: 'Are you sure you want to delete this vendor? This action cannot be undone.', confirmLabel: 'Delete', danger: true })) return;
     try { await adminAPI.deleteVendor(id); fetchVendors(); }
     catch { alert('Failed to delete vendor'); }
   };
@@ -179,6 +181,7 @@ export default function VendorManagement() {
                 <tr>
                   <th className="text-left px-5 py-3 text-[11px] font-semibold text-muted uppercase tracking-wider bg-card-alt">Vendor</th>
                   <th className="text-left px-5 py-3 text-[11px] font-semibold text-muted uppercase tracking-wider bg-card-alt">Category</th>
+                  <th className="text-left px-5 py-3 text-[11px] font-semibold text-muted uppercase tracking-wider bg-card-alt">Type</th>
                   <th className="text-left px-5 py-3 text-[11px] font-semibold text-muted uppercase tracking-wider bg-card-alt">Contact</th>
                   <th className="text-left px-5 py-3 text-[11px] font-semibold text-muted uppercase tracking-wider bg-card-alt">Status</th>
                   <th className="text-right px-5 py-3 text-[11px] font-semibold text-muted uppercase tracking-wider bg-card-alt">Actions</th>
@@ -200,6 +203,10 @@ export default function VendorManagement() {
                       <span className={`inline-flex px-2 py-0.5 rounded text-[11px] font-medium ${categoryColor(vendor.category)}`}>{vendor.category}</span>
                     </td>
                     <td className="px-5 py-3">
+                      <span className={`inline-flex px-2 py-0.5 rounded text-[11px] font-medium ${vendor.vendorType === 'CONTRACT' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-500/15 dark:text-gray-400'}`}>{vendor.vendorType || 'OTHER'}</span>
+                      {vendor.vendorType === 'CONTRACT' && vendor.monthlyAmount && <p className="text-[10px] text-muted mt-0.5">₹{Number(vendor.monthlyAmount).toLocaleString('en-IN')}/mo</p>}
+                    </td>
+                    <td className="px-5 py-3">
                       <p className="text-[13px] text-heading">{vendor.phone || '-'}</p>
                       <p className="text-[11px] text-muted">{vendor.email || ''}</p>
                     </td>
@@ -214,7 +221,7 @@ export default function VendorManagement() {
                     </td>
                   </tr>
                 ))}
-                {filtered.length === 0 && <tr><td colSpan={5}><EmptyState icon={Store} title="No vendors found" description="There are no vendors matching your search criteria." /></td></tr>}
+                {filtered.length === 0 && <tr><td colSpan={6}><EmptyState icon={Store} title="No vendors found" description="There are no vendors matching your search criteria." /></td></tr>}
               </tbody>
             </table>
             {hasMore && (
@@ -262,6 +269,42 @@ export default function VendorManagement() {
                   <label className="block text-[13px] font-medium text-heading mb-1">Address</label>
                   <textarea rows={2} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading resize-none" placeholder="Full vendor address" />
                 </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[13px] font-medium text-heading mb-1">Vendor Type</label>
+                    <select value={form.vendorType} onChange={(e) => setForm({ ...form, vendorType: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading">
+                      <option value="CONTRACT">Contract</option>
+                      <option value="SUPPLIER">Supplier</option>
+                      <option value="OTHER">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[13px] font-medium text-heading mb-1">GST Number</label>
+                    <input type="text" value={form.gstNumber} onChange={(e) => setForm({ ...form, gstNumber: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" placeholder="e.g. 22AAAAA0000A1Z5" />
+                  </div>
+                </div>
+
+                {form.vendorType === 'CONTRACT' && (
+                  <div className="bg-card-alt border border-border rounded-lg p-4 space-y-3">
+                    <p className="text-[12px] font-semibold text-heading">Contract Details</p>
+                    <div>
+                      <label className="block text-[13px] font-medium text-heading mb-1">Monthly Amount</label>
+                      <input type="number" min="0" step="0.01" value={form.monthlyAmount} onChange={(e) => setForm({ ...form, monthlyAmount: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" placeholder="e.g. 5000" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[13px] font-medium text-heading mb-1">Contract Start</label>
+                        <input type="date" value={form.contractStartDate} onChange={(e) => setForm({ ...form, contractStartDate: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" />
+                      </div>
+                      <div>
+                        <label className="block text-[13px] font-medium text-heading mb-1">Contract End</label>
+                        <input type="date" value={form.contractEndDate} onChange={(e) => setForm({ ...form, contractEndDate: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" />
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-muted">Contract vendors with a monthly amount will get auto-generated vouchers via "Generate Monthly" on the Expenses page.</p>
+                  </div>
+                )}
 
                 {editId && (
                   <div className="flex items-center gap-2 pt-1">

@@ -64,7 +64,9 @@ function UserAvatarPopup({ user, onLogout }) {
 }
 
 export default function Layout({ children }) {
-  const { user, logout, isAdmin, isGuard } = useAuth();
+  const { user, logout, isAdmin, isGuard, hasRole } = useAuth();
+  const canManageAccounts = isAdmin || hasRole('ACCOUNTANT') || hasRole('TREASURER') || hasRole('PRESIDENT');
+  const canManageSociety = isAdmin || hasRole('PRESIDENT') || hasRole('SECRETARY');
   const { dark, toggle } = useTheme();
   const { config: societyConfig } = useSocietyConfig();
   const { modal } = useModalHeader();
@@ -112,7 +114,7 @@ export default function Layout({ children }) {
 
   const mainItems = isGuard ? [
     { path: '/guard-dashboard', label: 'Guard Dashboard', icon: Shield },
-  ] : isAdmin ? [
+  ] : canManageSociety ? [
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   ] : [
     { path: '/user-dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -152,12 +154,12 @@ export default function Layout({ children }) {
   ];
 
   const bookingSubItems = [
-    ...(isAdmin ? [{ path: '/amenities', label: 'Manage Amenities', icon: Building2 }] : []),
+    ...(canManageSociety ? [{ path: '/amenities', label: 'Manage Amenities', icon: Building2 }] : []),
     { path: '/bookings', label: 'Book Facility', icon: Plus },
-    ...(isAdmin ? [{ path: '/booking-requests', label: 'Reservation Requests', icon: ClipboardList }] : []),
+    ...(canManageSociety ? [{ path: '/booking-requests', label: 'Reservation Requests', icon: ClipboardList }] : []),
   ];
 
-  const visitorSubItems = isAdmin ? [
+  const visitorSubItems = canManageSociety ? [
     { path: '/visitor-logs', label: 'Visitor Logs', icon: ClipboardList },
   ] : [
     { path: '/visitors', label: 'Pre-Approve', icon: UserPlus },
@@ -223,8 +225,8 @@ export default function Layout({ children }) {
               </Link>
             ))}
 
-            {/* Accounts (admin only) — Income, Expenditure, Vendors + Reports */}
-            {isAdmin && !isGuard && (
+            {/* Accounts — Admin, Accountant, Treasurer, President */}
+            {canManageAccounts && !isGuard && (
               <>
                 {sectionLabel('Accounts')}
                 <button onClick={() => setAccountsOpen(!accountsOpen)} className={parentBtnClass(isAccountsSection)}>
@@ -245,8 +247,8 @@ export default function Layout({ children }) {
               </>
             )}
 
-            {/* Payments (user only) */}
-            {!isAdmin && !isGuard && (
+            {/* Payments (non-admin residents) */}
+            {!canManageAccounts && !isGuard && (
               <>
                 {sectionLabel('Payments')}
                 <button onClick={() => setUserPaymentsOpen(!userPaymentsOpen)} className={parentBtnClass(isUserPaymentsSection)}>
@@ -267,8 +269,8 @@ export default function Layout({ children }) {
               </>
             )}
 
-            {/* Society (admin only) */}
-            {isAdmin && !isGuard && (
+            {/* Society — Admin, President, Secretary */}
+            {canManageSociety && !isGuard && (
               <>
                 {sectionLabel('Society')}
                 <button onClick={() => setSocietyOpen(!societyOpen)} className={parentBtnClass(isSocietySection)}>
@@ -314,7 +316,7 @@ export default function Layout({ children }) {
             {/* Helpdesk (not guard) — standalone complaints section */}
             {!isGuard && (
               <Link
-                to={isAdmin ? '/complaint-management' : '/complaints'}
+                to={canManageSociety ? '/complaint-management' : '/complaints'}
                 onClick={() => setSidebarOpen(false)}
                 className={navLinkClass(isHelpdeskSection)}>
                 <LifeBuoy className="w-[20px] h-[20px] shrink-0" />
@@ -366,8 +368,8 @@ export default function Layout({ children }) {
               </>
             )}
 
-            {/* My Property (user only) */}
-            {!isAdmin && !isGuard && (
+            {/* My Property (non-admin residents) */}
+            {!canManageSociety && !isGuard && (
               <>
                 {sectionLabel(`My ${propertyLabel}`)}
                 <button onClick={() => setMyPropertyOpen(!myPropertyOpen)} className={parentBtnClass(isMyPropertySection)}>
@@ -405,7 +407,7 @@ export default function Layout({ children }) {
                     <Link to="/settings" onClick={() => setSidebarOpen(false)} className={subLinkClass(isActive('/settings'))}>
                       <Settings className="w-4 h-4 shrink-0" /> User Settings
                     </Link>
-                    {isAdmin && (
+                    {canManageSociety && (
                       <Link to="/society-settings" onClick={() => setSidebarOpen(false)} className={subLinkClass(isActive('/society-settings'))}>
                         <Cog className="w-4 h-4 shrink-0" /> Society Settings
                       </Link>

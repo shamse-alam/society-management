@@ -2,15 +2,16 @@ package com.society.management.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "delivery_logs")
 @Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
-@Builder
-public class DeliveryLog {
+@NoArgsConstructor
+@SuperBuilder
+public class DeliveryLog extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -43,7 +44,4 @@ public class DeliveryLog {
 
     @Column(length = 500)
     private String photo;
-
-    @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
 }

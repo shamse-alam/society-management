@@ -53,7 +53,7 @@ public class PollService {
         Poll poll = Poll.builder()
                 .question(request.getQuestion())
                 .description(request.getDescription())
-                .createdBy(creator)
+                .author(creator)
                 .multipleChoice(request.getMultipleChoice() != null ? request.getMultipleChoice() : false)
                 .active(request.getActive() != null ? request.getActive() : true)
                 .expiresAt(request.getExpiresAt() != null ? LocalDate.parse(request.getExpiresAt()) : null)

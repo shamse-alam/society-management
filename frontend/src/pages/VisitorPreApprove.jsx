@@ -6,6 +6,7 @@ import { userAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import Modal from '../components/Modal';
 import { UserPlus, Copy, Clock, CheckCircle2, XCircle, LogIn, LogOut, Ban, ChevronDown, X, Bell, ShieldAlert, Check } from 'lucide-react';
+import { useConfirm } from '../context/ConfirmContext';
 
 const fmt = (dt) => {
   if (!dt) return '-';
@@ -35,6 +36,7 @@ const statusIcon = {
 
 export default function VisitorPreApprove() {
   const toast = useToast();
+  const confirm = useConfirm();
   const [loading, setLoading] = useState(true);
   const [gateRequests, setGateRequests] = useState([]);
   const [approvals, setApprovals] = useState([]);
@@ -96,7 +98,7 @@ export default function VisitorPreApprove() {
   };
 
   const handleReject = async (id) => {
-    if (!window.confirm('Deny entry to this visitor?')) return;
+    if (!await confirm({ title: 'Deny Visitor', message: 'Are you sure you want to deny entry to this visitor?', confirmLabel: 'Deny Entry', danger: true })) return;
     try {
       await userAPI.rejectVisit(id);
       toast.success('Visitor entry denied');
@@ -105,7 +107,7 @@ export default function VisitorPreApprove() {
   };
 
   const handleCancel = async (id) => {
-    if (!window.confirm('Cancel this approval?')) return;
+    if (!await confirm({ title: 'Cancel Approval', message: 'Are you sure you want to cancel this pre-approval?', confirmLabel: 'Cancel Approval', danger: true })) return;
     try {
       await userAPI.cancelApproval(id);
       toast.success('Approval cancelled');

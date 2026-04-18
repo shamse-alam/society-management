@@ -1,7 +1,6 @@
 package com.society.management.service;
 
 import com.society.management.dto.*;
-import com.society.management.entity.Role;
 import com.society.management.entity.User;
 import com.society.management.repository.UserRepository;
 import com.society.management.security.JwtTokenProvider;
@@ -48,10 +47,12 @@ public class AuthService {
         com.society.management.security.CustomUserDetails userDetails =
                 (com.society.management.security.CustomUserDetails) authentication.getPrincipal();
 
-        return new LoginResponse(token, userDetails.getUsername(),
-                userDetails.getUser().getFirstName(), userDetails.getUser().getLastName(),
-                userDetails.getUser().getFullName(), userDetails.getUser().getRole().name(),
-                userDetails.getUser().getProfileImage());
+        User user = userDetails.getUser();
+        return new LoginResponse(token, user.getUsername(),
+                user.getFirstName(), user.getLastName(),
+                user.getFullName(), user.getRole().name(),
+                user.getRoleList(), user.getProfileImage(),
+                user.getDesignation());
     }
 
     public UserResponse registerUser(RegisterUserRequest request) {
@@ -64,6 +65,14 @@ public class AuthService {
 
         String resetToken = UUID.randomUUID().toString();
 
+        // Handle roles: accept comma-separated string or single role
+        String roles = "RESIDENT";
+        if (request.getRoles() != null && !request.getRoles().isEmpty()) {
+            roles = String.join(",", request.getRoles());
+        } else if (request.getRole() != null && !request.getRole().isBlank()) {
+            roles = request.getRole();
+        }
+
         User user = User.builder()
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(UUID.randomUUID().toString()))
@@ -73,17 +82,18 @@ public class AuthService {
                 .phone(request.getPhone())
                 .address(request.getAddress())
                 .unitNumber(request.getUnitNumber())
-                .role(request.getRole() != null && request.getRole().equals("ADMIN") ? Role.ADMIN : Role.USER)
+                .roles(roles)
                 .passwordResetToken(resetToken)
                 .passwordResetTokenExpiry(LocalDateTime.now().plusHours(1))
                 .build();
 
         user = userRepository.save(user);
 
-        emailService.sendWelcomeEmail(user.getEmail(), user.getFullName(), user.getUsername(), resetToken);
+        boolean emailSent = emailService.sendWelcomeEmail(user.getEmail(), user.getFullName(), user.getUsername(), resetToken);
 
         UserResponse response = UserResponse.from(user);
         response.setPasswordResetLink(frontendUrl + "/reset-password?token=" + resetToken);
+        response.setEmailSent(emailSent);
         return response;
     }
 

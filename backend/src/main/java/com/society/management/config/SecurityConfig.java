@@ -1,6 +1,7 @@
 package com.society.management.config;
 
 import com.society.management.security.JwtAuthenticationFilter;
+import com.society.management.security.PermissionService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,12 +30,15 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final PermissionService permissionService;
 
     @Value("${app.cors.allowed-origins}")
     private String allowedOrigins;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
+                          PermissionService permissionService) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.permissionService = permissionService;
     }
 
     @Bean
@@ -43,17 +47,17 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/api/public/**").permitAll()
-                .requestMatchers("/api/uploads/**").permitAll()
-                .requestMatchers("/h2-console/**").permitAll()
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                .requestMatchers("/api/guard/**").hasRole("GUARD")
-                .requestMatchers("/api/notifications/**").authenticated()
-                .anyRequest().authenticated()
-            )
+            .authorizeHttpRequests(auth -> {
+                // Static frontend assets — always public
+                auth.requestMatchers("/", "/index.html", "/assets/**", "/favicon.ico", "/*.png", "/*.svg", "/*.ico").permitAll();
+                // SPA routes — non-API paths that should serve index.html
+                auth.requestMatchers(request -> {
+                    String path = request.getServletPath();
+                    return !path.startsWith("/api/") && !path.startsWith("/api");
+                }).permitAll();
+                // All authorization rules are loaded from permissions.yml
+                permissionService.configureAuthorization(auth);
+            })
             .exceptionHandling(ex -> ex
                 .authenticationEntryPoint(unauthorizedEntryPoint())
             )
@@ -75,7 +79,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(allowedOrigins.split(",")));
+        if ("*".equals(allowedOrigins.trim())) {
+            configuration.setAllowedOriginPatterns(List.of("*"));
+        } else {
+            configuration.setAllowedOrigins(List.of(allowedOrigins.split(",")));
+        }
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

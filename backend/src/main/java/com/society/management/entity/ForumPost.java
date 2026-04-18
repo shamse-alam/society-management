@@ -2,13 +2,13 @@ package com.society.management.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.time.LocalDateTime;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "forum_posts")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class ForumPost {
+@Getter @Setter @NoArgsConstructor
+@AllArgsConstructor @SuperBuilder
+public class ForumPost extends BaseEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
@@ -27,6 +27,4 @@ public class ForumPost {
     private boolean originalPost = false;
     @Builder.Default
     private boolean active = true;
-    @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
 }

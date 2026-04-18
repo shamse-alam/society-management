@@ -17,4 +17,12 @@ public class ExpenseRequest {
     private Long vendorId;
     @NotBlank
     private String expenseDate;
+
+    private String paymentMode;
+    private String chequeNumber;
+    private String chequeDate;
+    private String chequeBankName;
+    private String transactionReference;
+    private String transactionDate;
+    private String notes;
 }

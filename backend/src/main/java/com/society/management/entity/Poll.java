@@ -2,18 +2,18 @@ package com.society.management.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Table(name = "polls")
 @Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
-@Builder
-public class Poll {
+@NoArgsConstructor
+@SuperBuilder
+public class Poll extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,8 +25,8 @@ public class Poll {
     private String description;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by")
-    private User createdBy;
+    @JoinColumn(name = "author_id")
+    private User author;
 
     @Builder.Default
     private boolean multipleChoice = false;
@@ -39,7 +39,4 @@ public class Poll {
     @OneToMany(mappedBy = "poll", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<PollOption> options = new ArrayList<>();
-
-    @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
 }

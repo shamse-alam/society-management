@@ -4,15 +4,21 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "users")
 @Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
-@Builder
-public class User {
+@NoArgsConstructor
+@SuperBuilder
+public class User extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -42,9 +48,17 @@ public class User {
 
     private String unitNumber;
 
-    @Enumerated(EnumType.STRING)
+    // Multi-role: comma-separated, e.g. "RESIDENT,TREASURER"
+    @Column(nullable = false)
     @Builder.Default
-    private Role role = Role.USER;
+    private String roles = "RESIDENT";
+
+    // Executive committee designation (display only)
+    private String designation; // President, Secretary, Treasurer, Vice President, Joint Secretary, Committee Member
+
+    private LocalDate designationSince;
+
+    private LocalDate designationTill;
 
     @Builder.Default
     private boolean enabled = true;
@@ -56,11 +70,6 @@ public class User {
 
     private LocalDateTime passwordResetTokenExpiry;
 
-    @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
-
-    private LocalDateTime updatedAt;
-
     @Transient
     public String getFullName() {
         if (firstName == null && lastName == null) return null;
@@ -69,8 +78,31 @@ public class User {
         return firstName + " " + lastName;
     }
 
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+    @Transient
+    public List<String> getRoleList() {
+        if (roles == null || roles.isBlank()) return Collections.singletonList("RESIDENT");
+        return Arrays.stream(roles.split(","))
+                .map(String::trim).filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
+    }
+
+    @Transient
+    public boolean hasRole(String role) {
+        return getRoleList().contains(role);
+    }
+
+    // Backward compat: primary role for old code
+    @Transient
+    public Role getRole() {
+        List<String> list = getRoleList();
+        // Priority: ADMIN > GUARD > ACCOUNTANT > RESIDENT
+        if (list.contains("ADMIN")) return Role.ADMIN;
+        if (list.contains("GUARD")) return Role.GUARD;
+        if (list.contains("ACCOUNTANT")) return Role.ACCOUNTANT;
+        if (list.contains("PRESIDENT")) return Role.PRESIDENT;
+        if (list.contains("SECRETARY")) return Role.SECRETARY;
+        if (list.contains("TREASURER")) return Role.TREASURER;
+        if (list.contains("COMMITTEE_MEMBER")) return Role.COMMITTEE_MEMBER;
+        return Role.RESIDENT;
     }
 }

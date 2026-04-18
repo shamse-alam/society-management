@@ -2,15 +2,16 @@ package com.society.management.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "visit_logs")
 @Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
-@Builder
-public class VisitLog {
+@NoArgsConstructor
+@SuperBuilder
+public class VisitLog extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -54,7 +55,4 @@ public class VisitLog {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "checked_out_by")
     private User checkedOutBy;
-
-    @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
 }

@@ -2,7 +2,6 @@ package com.society.management.service;
 
 import com.society.management.dto.UpdateUserRequest;
 import com.society.management.dto.UserResponse;
-import com.society.management.entity.Role;
 import com.society.management.entity.User;
 import com.society.management.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -52,8 +52,19 @@ public class UserService {
         if (request.getPhone() != null) user.setPhone(request.getPhone());
         if (request.getAddress() != null) user.setAddress(request.getAddress());
         if (request.getUnitNumber() != null) user.setUnitNumber(request.getUnitNumber());
-        if (request.getRole() != null) user.setRole(Role.valueOf(request.getRole()));
         if (request.getEnabled() != null) user.setEnabled(request.getEnabled());
+
+        // Multi-role update
+        if (request.getRoles() != null && !request.getRoles().isEmpty()) {
+            user.setRoles(String.join(",", request.getRoles()));
+        } else if (request.getRole() != null) {
+            user.setRoles(request.getRole());
+        }
+
+        // Designation
+        if (request.getDesignation() != null) user.setDesignation(request.getDesignation().isBlank() ? null : request.getDesignation());
+        if (request.getDesignationSince() != null) user.setDesignationSince(request.getDesignationSince().isBlank() ? null : LocalDate.parse(request.getDesignationSince()));
+        if (request.getDesignationTill() != null) user.setDesignationTill(request.getDesignationTill().isBlank() ? null : LocalDate.parse(request.getDesignationTill()));
 
         user = userRepository.save(user);
         return UserResponse.from(user);
@@ -100,5 +111,12 @@ public class UserService {
 
     public Path getProfileImagePath(String filename) {
         return Paths.get(uploadDir, "profiles", filename);
+    }
+
+    public List<UserResponse> getCommitteeMembers() {
+        return userRepository.findAll().stream()
+                .filter(u -> u.getDesignation() != null && !u.getDesignation().isBlank())
+                .map(UserResponse::from)
+                .collect(Collectors.toList());
     }
 }

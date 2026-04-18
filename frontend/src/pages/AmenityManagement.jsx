@@ -5,12 +5,14 @@ import { adminAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import Modal from '../components/Modal';
 import { Plus, Pencil, Trash2, Building2, IndianRupee, CheckCircle2, XCircle, Save } from 'lucide-react';
+import { useConfirm } from '../context/ConfirmContext';
 
 const fmt = (n) => Number(n).toLocaleString('en-IN', { minimumFractionDigits: 0 });
 const emptyForm = { name: '', description: '', chargePerDay: '', available: true, totalUnits: 1 };
 
 export default function AmenityManagement() {
   const toast = useToast();
+  const confirm = useConfirm();
   const [amenities, setAmenities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -61,7 +63,7 @@ export default function AmenityManagement() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this amenity?')) return;
+    if (!await confirm({ title: 'Delete Amenity', message: 'Are you sure you want to delete this amenity?', confirmLabel: 'Delete', danger: true })) return;
     try { await adminAPI.deleteAmenity(id); toast.success('Amenity deleted'); fetchAmenities(); }
     catch { toast.error('Failed to delete amenity'); }
   };

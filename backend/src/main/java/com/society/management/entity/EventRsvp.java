@@ -2,13 +2,13 @@ package com.society.management.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.time.LocalDateTime;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "event_rsvps", uniqueConstraints = @UniqueConstraint(columnNames = {"event_id", "user_id"}))
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class EventRsvp {
+@Getter @Setter @NoArgsConstructor
+@AllArgsConstructor @SuperBuilder
+public class EventRsvp extends BaseEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
@@ -26,7 +26,4 @@ public class EventRsvp {
     @Builder.Default
     private int guestCount = 0;
     private String notes;
-
-    @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
 }

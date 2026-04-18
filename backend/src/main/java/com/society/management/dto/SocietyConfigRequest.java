@@ -15,4 +15,6 @@ public class SocietyConfigRequest {
     private String registrationNumber;
     private List<String> propertyTypes;
     private String propertyLabel;
+    private List<String> expenseApprovalRoles;
+    private Integer expenseApprovalCount;
 }

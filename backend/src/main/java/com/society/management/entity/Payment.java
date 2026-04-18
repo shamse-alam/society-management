@@ -2,6 +2,7 @@ package com.society.management.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -10,9 +11,9 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "payments")
 @Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
-@Builder
-public class Payment {
+@NoArgsConstructor
+@SuperBuilder
+public class Payment extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -53,7 +54,4 @@ public class Payment {
 
     @Builder.Default
     private LocalDateTime paidAt = LocalDateTime.now();
-
-    @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
 }

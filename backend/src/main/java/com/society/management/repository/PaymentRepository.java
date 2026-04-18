@@ -16,6 +16,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     List<Payment> findAllByOrderByCreatedAtDesc();
     Optional<Payment> findByBookingId(Long bookingId);
     List<Payment> findByStatusAndPenaltyAppliedFalseAndDueDateBefore(PaymentStatus status, LocalDate date);
+    List<Payment> findByStatusAndDueDateBefore(PaymentStatus status, LocalDate date);
     List<Payment> findByStatus(PaymentStatus status);
     List<Payment> findByUserIdAndPaymentTypeAndPeriodFromAndPeriodTo(Long userId, PaymentType type, LocalDate from, LocalDate to);
     List<Payment> findByUserIdAndPaymentType(Long userId, PaymentType type);

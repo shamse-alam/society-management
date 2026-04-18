@@ -6,21 +6,23 @@ import { adminAPI } from '../services/api';
 import Modal from '../components/Modal';
 import UserAvatar from '../components/UserAvatar';
 import { Plus, Pencil, Trash2, Search, Copy, Check, Upload, Save, Users } from 'lucide-react';
+import { useConfirm } from '../context/ConfirmContext';
 import { useNavigate } from 'react-router-dom';
 import { useSocietyConfig } from '../context/SocietyConfigContext';
 
 export default function UserManagement() {
   const { config } = useSocietyConfig();
   const propertyLabel = config?.propertyLabel || 'Property';
+  const confirm = useConfirm();
   const [users, setUsers] = useState([]);
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
-  const [resetLinkModal, setResetLinkModal] = useState({ open: false, link: '', username: '' });
+  const [resetLinkModal, setResetLinkModal] = useState({ open: false, link: '', username: '', emailSent: false });
   const [copied, setCopied] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ username: '', firstName: '', lastName: '', email: '', phone: '', address: '', unitNumber: '', role: 'USER' });
+  const [form, setForm] = useState({ username: '', firstName: '', lastName: '', email: '', phone: '', address: '', unitNumber: '', roles: ['RESIDENT'] });
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [error, setError] = useState('');
@@ -42,14 +44,14 @@ export default function UserManagement() {
 
   const openCreate = () => {
     setEditing(null);
-    setForm({ username: '', firstName: '', lastName: '', email: '', phone: '', address: '', unitNumber: '', role: 'USER' });
+    setForm({ username: '', firstName: '', lastName: '', email: '', phone: '', address: '', unitNumber: '', roles: ['RESIDENT'] });
     setImageFile(null); setImagePreview(null);
     setError(''); setModalOpen(true);
   };
 
   const openEdit = (user) => {
     setEditing(user);
-    setForm({ username: user.username, firstName: user.firstName || '', lastName: user.lastName || '', email: user.email, phone: user.phone || '', address: user.address || '', unitNumber: user.unitNumber || '', role: user.role });
+    setForm({ username: user.username, firstName: user.firstName || '', lastName: user.lastName || '', email: user.email, phone: user.phone || '', address: user.address || '', unitNumber: user.unitNumber || '', roles: user.roles || [user.role] });
     setImageFile(null); setImagePreview(user.profileImage || null);
     setError(''); setModalOpen(true);
   };
@@ -68,12 +70,12 @@ export default function UserManagement() {
     try {
       let userId;
       if (editing) {
-        await adminAPI.updateUser(editing.id, { firstName: form.firstName, lastName: form.lastName, email: form.email, phone: form.phone, address: form.address, unitNumber: form.unitNumber, role: form.role });
+        await adminAPI.updateUser(editing.id, { firstName: form.firstName, lastName: form.lastName, email: form.email, phone: form.phone, address: form.address, unitNumber: form.unitNumber, roles: form.roles });
         userId = editing.id;
       } else {
-        const { data } = await adminAPI.createUser(form);
+        const { data } = await adminAPI.createUser({ ...form, role: form.roles[0], roles: form.roles });
         userId = data.id;
-        if (data.passwordResetLink) setResetLinkModal({ open: true, link: data.passwordResetLink, username: data.username });
+        if (data.passwordResetLink) setResetLinkModal({ open: true, link: data.passwordResetLink, username: data.username, emailSent: !!data.emailSent });
       }
       if (imageFile && userId) {
         await adminAPI.uploadProfileImage(userId, imageFile);
@@ -84,7 +86,7 @@ export default function UserManagement() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this user?')) return;
+    if (!await confirm({ title: 'Delete User', message: 'Are you sure you want to delete this user? This action cannot be undone.', confirmLabel: 'Delete', danger: true })) return;
     try { await adminAPI.deleteUser(id); fetchUsers(); }
     catch (err) { alert(err.response?.data?.message || 'Failed to delete'); }
   };
@@ -149,7 +151,18 @@ export default function UserManagement() {
                     </td>
                     <td className="px-5 py-3 text-[13px] text-heading">{user.unitNumber || '-'}</td>
                     <td className="px-5 py-3">
-                      <span className={`inline-flex px-2 py-0.5 rounded text-[11px] font-medium ${user.role === 'ADMIN' ? 'bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400'}`}>{user.role}</span>
+                      <div className="flex flex-wrap gap-1">
+                        {(user.roles || [user.role]).map(r => (
+                          <span key={r} className={`inline-flex px-2 py-0.5 rounded text-[11px] font-medium ${
+                            r === 'ADMIN' ? 'bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-400' :
+                            r === 'GUARD' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400' :
+                            r === 'ACCOUNTANT' || r === 'TREASURER' ? 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400' :
+                            r === 'PRESIDENT' || r === 'SECRETARY' ? 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400' :
+                            r === 'COMMITTEE_MEMBER' ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-400' :
+                            'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400'
+                          }`}>{r.replace(/_/g, ' ')}</span>
+                        ))}
+                      </div>
                     </td>
                     <td className="px-5 py-3 text-right">
                       <div className="flex justify-end gap-1">
@@ -257,32 +270,63 @@ export default function UserManagement() {
                 </div>
               </div>
 
-              {/* Role */}
+              {/* Roles */}
               <div className="bg-card border border-border rounded-xl p-5">
-                <h2 className="text-[14px] font-semibold text-heading mb-1">Role</h2>
-                <p className="text-[11px] text-muted mb-3">Assign permissions level for this member.</p>
-                <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading">
-                  <option value="USER">User</option>
-                  <option value="ADMIN">Admin</option>
-                </select>
+                <h2 className="text-[14px] font-semibold text-heading mb-1">Roles</h2>
+                <p className="text-[11px] text-muted mb-3">Assign one or more roles to this member.</p>
+                <div className="space-y-2">
+                  {[
+                    { value: 'ADMIN', label: 'Admin', desc: 'Full access' },
+                    { value: 'RESIDENT', label: 'Resident', desc: 'Regular member' },
+                    { value: 'GUARD', label: 'Guard', desc: 'Security access' },
+                    { value: 'ACCOUNTANT', label: 'Accountant', desc: 'Financial access' },
+                    { value: 'PRESIDENT', label: 'President', desc: 'Society president' },
+                    { value: 'SECRETARY', label: 'Secretary', desc: 'Society secretary' },
+                    { value: 'TREASURER', label: 'Treasurer', desc: 'Treasury access' },
+                    { value: 'COMMITTEE_MEMBER', label: 'Committee Member', desc: 'Committee access' },
+                  ].map(r => (
+                    <label key={r.value} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-card-hover transition-colors cursor-pointer">
+                      <input type="checkbox" checked={form.roles.includes(r.value)}
+                        onChange={(e) => {
+                          const roles = e.target.checked
+                            ? [...form.roles, r.value]
+                            : form.roles.filter(x => x !== r.value);
+                          setForm({ ...form, roles: roles.length ? roles : ['RESIDENT'] });
+                        }}
+                        className="w-4 h-4 rounded border-input-border text-indigo-600 focus:ring-indigo-500" />
+                      <div>
+                        <p className="text-[13px] font-medium text-heading">{r.label}</p>
+                        <p className="text-[11px] text-muted">{r.desc}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
         </form>
       </Modal>
 
-      <Modal open={resetLinkModal.open} onClose={() => setResetLinkModal({ open: false, link: '', username: '' })} title="Member Registered Successfully">
+      <Modal open={resetLinkModal.open} onClose={() => setResetLinkModal({ open: false, link: '', username: '', emailSent: false })} title="Member Registered Successfully">
         <div className="space-y-4">
-          <p className="text-[13px] text-sub">User <span className="font-semibold">@{resetLinkModal.username}</span> has been created. Share this password reset link:</p>
+          {resetLinkModal.emailSent ? (
+            <p className="text-[13px] text-sub">User <span className="font-semibold">@{resetLinkModal.username}</span> has been created. A welcome email with the password reset link has been sent to their email address.</p>
+          ) : (
+            <p className="text-[13px] text-sub">User <span className="font-semibold">@{resetLinkModal.username}</span> has been created. Share this password reset link:</p>
+          )}
           <div className="bg-card-alt border border-border rounded p-3 flex items-center gap-2">
             <input type="text" readOnly value={resetLinkModal.link} className="flex-1 bg-transparent text-[13px] text-heading outline-none truncate" />
             <button onClick={() => { navigator.clipboard.writeText(resetLinkModal.link); setCopied(true); setTimeout(() => setCopied(false), 2000); }} className="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-600 text-white text-[11px] font-medium rounded hover:bg-indigo-700 transition-colors">
               {copied ? <><Check className="w-3.5 h-3.5" /> Copied</> : <><Copy className="w-3.5 h-3.5" /> Copy</>}
             </button>
           </div>
-          <p className="text-[11px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded p-3">Note: Email delivery failed (SMTP not configured). Please copy this link and share it manually. The link expires in 1 hour.</p>
+          {resetLinkModal.emailSent ? (
+            <p className="text-[11px] text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20 rounded p-3">Email sent successfully. You can also copy the link above to share manually. The link expires in 1 hour.</p>
+          ) : (
+            <p className="text-[11px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded p-3">Note: Email delivery failed. Please copy this link and share it manually. The link expires in 1 hour.</p>
+          )}
           <div className="flex justify-end pt-2">
-            <button onClick={() => setResetLinkModal({ open: false, link: '', username: '' })} className="px-4 py-2 bg-indigo-600 text-white rounded text-[13px] font-medium hover:bg-indigo-700">Done</button>
+            <button onClick={() => setResetLinkModal({ open: false, link: '', username: '', emailSent: false })} className="px-4 py-2 bg-indigo-600 text-white rounded text-[13px] font-medium hover:bg-indigo-700">Done</button>
           </div>
         </div>
       </Modal>

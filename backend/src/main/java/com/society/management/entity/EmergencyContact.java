@@ -2,15 +2,14 @@ package com.society.management.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.time.LocalDateTime;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "emergency_contacts")
 @Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
-@Builder
-public class EmergencyContact {
+@NoArgsConstructor
+@SuperBuilder
+public class EmergencyContact extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,7 +21,7 @@ public class EmergencyContact {
     @Column(nullable = false)
     private String phone;
 
-    private String category; // POLICE, FIRE, AMBULANCE, HOSPITAL, SOCIETY_OFFICE, OTHER
+    private String category;
 
     private String address;
 
@@ -31,7 +30,4 @@ public class EmergencyContact {
 
     @Builder.Default
     private int displayOrder = 0;
-
-    @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
 }

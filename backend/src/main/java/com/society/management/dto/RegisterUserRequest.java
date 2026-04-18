@@ -4,6 +4,8 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class RegisterUserRequest {
     @NotBlank
@@ -17,5 +19,9 @@ public class RegisterUserRequest {
     private String phone;
     private String address;
     private String unitNumber;
-    private String role;
+    private String role; // backward compat
+    private List<String> roles; // multi-role
+    private String designation;
+    private String designationSince;
+    private String designationTill;
 }

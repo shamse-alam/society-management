@@ -188,7 +188,11 @@ export default function Settings() {
               <UserAvatar name={user?.fullName} src={user?.profileImage} size="lg" />
               <p className="text-[15px] font-semibold text-heading mt-3 truncate max-w-full">{user?.fullName}</p>
               <p className="text-[13px] text-muted truncate max-w-full">@{user?.username}</p>
-              <p className="text-[12px] text-muted mt-1">{user?.role === 'ADMIN' ? 'Administrator' : user?.role === 'GUARD' ? 'Security Guard' : 'Member'}</p>
+              <div className="flex flex-wrap justify-center gap-1 mt-1">
+                {(user?.roles || [user?.role]).map(r => (
+                  <span key={r} className="inline-flex px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-400">{r?.replace(/_/g, ' ')}</span>
+                ))}
+              </div>
               <p className="text-[12px] text-muted">{user?.email}</p>
               <Link to="/my-profile" className="mt-3 inline-flex items-center gap-2 px-4 py-2 text-[12px] font-medium text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors">
                 <User className="w-3.5 h-3.5" /> Edit Profile

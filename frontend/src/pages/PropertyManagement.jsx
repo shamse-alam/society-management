@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { adminAPI } from '../services/api';
 import Modal from '../components/Modal';
 import { Plus, Pencil, Trash2, Search, Building2, ArrowLeft, Users, Phone, Save } from 'lucide-react';
+import { useConfirm } from '../context/ConfirmContext';
 import { useSocietyConfig } from '../context/SocietyConfigContext';
 import { formatDate, formatNumber } from '../utils/format';
 
@@ -16,6 +17,7 @@ const STATUS_COLORS = {
 
 export default function PropertyManagement() {
   const { config } = useSocietyConfig();
+  const confirm = useConfirm();
   const propertyLabel = config?.propertyLabel || 'Property';
   const propertyTypes = config?.propertyTypes || [];
   const [properties, setProperties] = useState([]);
@@ -79,7 +81,7 @@ export default function PropertyManagement() {
 
   const handleDelete = async (id, e) => {
     e?.stopPropagation();
-    if (!window.confirm(`Are you sure you want to delete this ${propertyLabel.toLowerCase()}?`)) return;
+    if (!await confirm({ title: `Delete ${propertyLabel}`, message: `Are you sure you want to delete this ${propertyLabel.toLowerCase()}? This action cannot be undone.`, confirmLabel: 'Delete', danger: true })) return;
     try { await adminAPI.deleteProperty(id); if (selectedProperty && selectedProperty.id === id) closeDetail(); fetchProperties(); }
     catch (err) { alert(err.response?.data?.message || 'Failed to delete'); }
   };

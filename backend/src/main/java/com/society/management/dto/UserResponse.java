@@ -3,6 +3,8 @@ package com.society.management.dto;
 import com.society.management.entity.User;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class UserResponse {
     private Long id;
@@ -14,11 +16,16 @@ public class UserResponse {
     private String phone;
     private String address;
     private String unitNumber;
-    private String role;
+    private String role; // primary role (backward compat)
+    private List<String> roles; // all roles
     private boolean enabled;
     private String profileImage;
     private String createdAt;
     private String passwordResetLink;
+    private boolean emailSent;
+    private String designation;
+    private String designationSince;
+    private String designationTill;
 
     public static UserResponse from(User user) {
         UserResponse r = new UserResponse();
@@ -32,9 +39,13 @@ public class UserResponse {
         r.setAddress(user.getAddress());
         r.setUnitNumber(user.getUnitNumber());
         r.setRole(user.getRole().name());
+        r.setRoles(user.getRoleList());
         r.setEnabled(user.isEnabled());
         r.setProfileImage(user.getProfileImage());
         r.setCreatedAt(user.getCreatedAt() != null ? user.getCreatedAt().toString() : null);
+        r.setDesignation(user.getDesignation());
+        r.setDesignationSince(user.getDesignationSince() != null ? user.getDesignationSince().toString() : null);
+        r.setDesignationTill(user.getDesignationTill() != null ? user.getDesignationTill().toString() : null);
         return r;
     }
 }

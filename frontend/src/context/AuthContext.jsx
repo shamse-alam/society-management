@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useCallback } from 'react';
 import { authAPI } from '../services/api';
 
 const AuthContext = createContext(null);
@@ -12,7 +12,11 @@ export function AuthProvider({ children }) {
   const login = async (username, password) => {
     const { data } = await authAPI.login({ username, password });
     localStorage.setItem('token', data.token);
-    const userData = { username: data.username, firstName: data.firstName, lastName: data.lastName, fullName: data.fullName, role: data.role, profileImage: data.profileImage };
+    const userData = {
+      username: data.username, firstName: data.firstName, lastName: data.lastName,
+      fullName: data.fullName, role: data.role, roles: data.roles || [data.role],
+      profileImage: data.profileImage, designation: data.designation,
+    };
     localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
     return userData;
@@ -24,11 +28,12 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
-  const isAdmin = user?.role === 'ADMIN';
-  const isGuard = user?.role === 'GUARD';
+  const hasRole = useCallback((role) => user?.roles?.includes(role) || false, [user]);
+  const isAdmin = user?.roles?.includes('ADMIN') || false;
+  const isGuard = user?.roles?.includes('GUARD') && !isAdmin;
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAdmin, isGuard }}>
+    <AuthContext.Provider value={{ user, login, logout, isAdmin, isGuard, hasRole }}>
       {children}
     </AuthContext.Provider>
   );

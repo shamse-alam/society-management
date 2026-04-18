@@ -34,7 +34,7 @@ public class PollResponse {
         r.setId(poll.getId());
         r.setQuestion(poll.getQuestion());
         r.setDescription(poll.getDescription());
-        r.setCreatedByName(poll.getCreatedBy() != null ? poll.getCreatedBy().getFullName() : null);
+        r.setCreatedByName(poll.getAuthor() != null ? poll.getAuthor().getFullName() : null);
         r.setMultipleChoice(poll.isMultipleChoice());
         r.setActive(poll.isActive());
         r.setExpiresAt(poll.getExpiresAt() != null ? poll.getExpiresAt().toString() : null);

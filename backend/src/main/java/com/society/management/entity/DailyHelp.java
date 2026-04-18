@@ -2,16 +2,16 @@ package com.society.management.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "daily_help")
 @Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
-@Builder
-public class DailyHelp {
+@NoArgsConstructor
+@SuperBuilder
+public class DailyHelp extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -44,10 +44,7 @@ public class DailyHelp {
 
     private LocalDate endDate;
 
-    private String workingDays; // e.g. "MON,TUE,WED,THU,FRI"
+    private String workingDays;
 
-    private String timeSlot; // e.g. "08:00-10:00"
-
-    @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private String timeSlot;
 }

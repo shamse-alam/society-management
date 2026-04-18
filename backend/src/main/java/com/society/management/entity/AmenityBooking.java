@@ -2,17 +2,17 @@ package com.society.management.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "amenity_bookings")
 @Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
-@Builder
-public class AmenityBooking {
+@NoArgsConstructor
+@SuperBuilder
+public class AmenityBooking extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,7 +39,4 @@ public class AmenityBooking {
     private BookingStatus status = BookingStatus.PENDING;
 
     private String purpose;
-
-    @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
 }

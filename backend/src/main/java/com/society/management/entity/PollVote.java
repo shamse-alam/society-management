@@ -2,15 +2,14 @@ package com.society.management.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.time.LocalDateTime;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "poll_votes", uniqueConstraints = @UniqueConstraint(columnNames = {"poll_id", "user_id"}))
 @Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
-@Builder
-public class PollVote {
+@NoArgsConstructor
+@SuperBuilder
+public class PollVote extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,7 +26,4 @@ public class PollVote {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "option_id", nullable = false)
     private PollOption option;
-
-    @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
 }

@@ -2,15 +2,14 @@ package com.society.management.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.time.LocalDateTime;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "notifications")
 @Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
-@Builder
-public class Notification {
+@NoArgsConstructor
+@SuperBuilder
+public class Notification extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -35,7 +34,4 @@ public class Notification {
     @Builder.Default
     @Column(name = "is_read")
     private boolean read = false;
-
-    @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
 }

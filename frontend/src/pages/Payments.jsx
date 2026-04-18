@@ -521,7 +521,7 @@ export default function Payments() {
                           </div>
                           <div>
                             <label className="block text-[13px] font-medium text-heading mb-1">Year</label>
-                            <input type="number" value={invoiceForm.year} onChange={e => setInvoiceForm({...invoiceForm, year: Number(e.target.value)})} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" />
+                            <input type="number" min="2000" max="2099" value={invoiceForm.year} onChange={e => setInvoiceForm({...invoiceForm, year: Number(e.target.value)})} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" />
                           </div>
                         </div>
                       ) : (

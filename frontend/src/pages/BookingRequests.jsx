@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { adminAPI } from '../services/api';
 import UserAvatar from '../components/UserAvatar';
 import { CheckCircle, XCircle, IndianRupee, CalendarDays } from 'lucide-react';
+import { useConfirm } from '../context/ConfirmContext';
 
 const STATUS_COLORS = {
   PENDING: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/15 dark:text-yellow-400',
@@ -20,6 +21,7 @@ const PAYMENT_COLORS = {
 const fmt = (n) => Number(n).toLocaleString('en-IN', { minimumFractionDigits: 0 });
 
 export default function BookingRequests() {
+  const confirm = useConfirm();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('PENDING');
@@ -39,7 +41,7 @@ export default function BookingRequests() {
   };
 
   const handleCancel = async (id) => {
-    if (!window.confirm('Cancel this booking? Any associated invoice will be removed.')) return;
+    if (!await confirm({ title: 'Cancel Booking', message: 'Cancel this booking? Any associated invoice will be removed.', confirmLabel: 'Cancel Booking', danger: true })) return;
     try { await adminAPI.cancelBooking(id); setSuccess('Booking cancelled and payment removed'); setTimeout(() => setSuccess(''), 3000); fetchData(); }
     catch (err) { alert(err.response?.data?.message || 'Failed to cancel booking'); }
   };

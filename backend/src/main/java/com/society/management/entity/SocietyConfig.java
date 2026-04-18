@@ -2,15 +2,14 @@ package com.society.management.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.time.LocalDateTime;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "society_config")
 @Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
-@Builder
-public class SocietyConfig {
+@NoArgsConstructor
+@SuperBuilder
+public class SocietyConfig extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -38,14 +37,12 @@ public class SocietyConfig {
 
     private String propertyLabel;
 
+    // Approval config: comma-separated roles that can approve expenses
+    @Column(length = 500)
     @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private String expenseApprovalRoles = "PRESIDENT,SECRETARY,TREASURER";
 
+    // Minimum approvers needed
     @Builder.Default
-    private LocalDateTime updatedAt = LocalDateTime.now();
-
-    @PreUpdate
-    public void preUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
+    private Integer expenseApprovalCount = 1;
 }

@@ -2,6 +2,8 @@ package com.society.management.dto;
 
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class UpdateUserRequest {
     private String firstName;
@@ -10,6 +12,10 @@ public class UpdateUserRequest {
     private String phone;
     private String address;
     private String unitNumber;
-    private String role;
+    private String role; // backward compat
+    private List<String> roles; // multi-role
     private Boolean enabled;
+    private String designation;
+    private String designationSince;
+    private String designationTill;
 }

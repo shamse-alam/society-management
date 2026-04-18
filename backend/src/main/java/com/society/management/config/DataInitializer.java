@@ -30,13 +30,13 @@ public class DataInitializer implements CommandLineRunner {
         userRepository.save(User.builder()
                 .username("admin").password(pwd).firstName("System").lastName("Administrator")
                 .email("admin@courtyard.com").phone("+91-9000000000").address("Society Office")
-                .unitNumber("ADMIN").role(Role.ADMIN).build());
+                .unitNumber("ADMIN").roles("ADMIN").build());
         log.info("Admin created - username: admin, password: welcome");
 
         userRepository.save(User.builder()
                 .username("guard").password(pwd).firstName("Security").lastName("Guard")
                 .email("guard@courtyard.com").phone("+91-9000000001").address("Main Gate")
-                .unitNumber("GATE").role(Role.GUARD).build());
+                .unitNumber("GATE").roles("GUARD").build());
         log.info("Guard created - username: guard, password: welcome");
     }
 }

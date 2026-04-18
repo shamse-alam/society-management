@@ -2,13 +2,15 @@ package com.society.management.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "society_events")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class SocietyEvent {
+@Getter @Setter @NoArgsConstructor
+@AllArgsConstructor @SuperBuilder
+public class SocietyEvent extends BaseEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
@@ -33,6 +35,4 @@ public class SocietyEvent {
 
     @Builder.Default
     private boolean active = true;
-    @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
 }

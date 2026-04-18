@@ -2,14 +2,15 @@ package com.society.management.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "move_requests")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class MoveRequest {
+@Getter @Setter @NoArgsConstructor
+@AllArgsConstructor @SuperBuilder
+public class MoveRequest extends BaseEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
@@ -44,7 +45,4 @@ public class MoveRequest {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "approved_by")
     private User approvedBy;
-
-    @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
 }

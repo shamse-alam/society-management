@@ -37,7 +37,7 @@ public class NotificationService {
 
     public void createNotificationForAllUsers(String title, String message, NotificationType type, Long referenceId) {
         List<User> users = userRepository.findAll().stream()
-                .filter(u -> u.getRole() == Role.USER || u.getRole() == Role.ADMIN)
+                .filter(u -> !u.hasRole("GUARD"))
                 .collect(Collectors.toList());
         for (User user : users) {
             createNotification(user, title, message, type, referenceId);
@@ -46,7 +46,7 @@ public class NotificationService {
 
     public void createNotificationForAdmins(String title, String message, NotificationType type, Long referenceId) {
         List<User> admins = userRepository.findAll().stream()
-                .filter(u -> u.getRole() == Role.ADMIN)
+                .filter(u -> u.hasRole("ADMIN"))
                 .collect(Collectors.toList());
         for (User admin : admins) {
             createNotification(admin, title, message, type, referenceId);

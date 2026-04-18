@@ -2,15 +2,16 @@ package com.society.management.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "complaints")
 @Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
-@Builder
-public class Complaint {
+@NoArgsConstructor
+@SuperBuilder
+public class Complaint extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,13 +28,13 @@ public class Complaint {
     private String description;
 
     @Column(nullable = false)
-    private String category; // PLUMBING, ELECTRICAL, HOUSEKEEPING, SECURITY, PARKING, NOISE, GENERAL, OTHER
+    private String category;
 
     @Column(nullable = false)
-    private String status; // OPEN, IN_PROGRESS, RESOLVED, CLOSED
+    private String status;
 
     @Column(nullable = false)
-    private String priority; // LOW, MEDIUM, HIGH
+    private String priority;
 
     @Column(columnDefinition = "TEXT")
     private String adminRemarks;
@@ -42,14 +43,4 @@ public class Complaint {
     private String attachmentUrl;
 
     private LocalDateTime resolvedAt;
-
-    @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
-
-    private LocalDateTime updatedAt;
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 }

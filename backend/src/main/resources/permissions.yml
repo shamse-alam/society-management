@@ -1,0 +1,161 @@
+# ====================================================================
+# Role & Permission Configuration
+# ====================================================================
+# Modify this file to change role permissions WITHOUT code changes.
+# Restart the application after changes.
+#
+# Structure:
+#   roles:
+#     ROLE_NAME:
+#       description: Human readable description
+#       permissions:
+#         - pattern: URL pattern (Ant-style)
+#           methods: [HTTP methods] or ALL
+#
+# Notes:
+#   - Patterns use Ant-style matching: /api/admin/** matches all under /api/admin/
+#   - Methods: GET, POST, PUT, DELETE, PATCH, or ALL
+#   - Public endpoints (auth, uploads) are always open — no config needed
+#   - ADMIN role always has full access (hardcoded safety net)
+# ====================================================================
+
+roles:
+  ADMIN:
+    description: "Full system administrator"
+    permissions:
+      - pattern: "/api/admin/**"
+        methods: ALL
+      - pattern: "/api/accountant/**"
+        methods: ALL
+      - pattern: "/api/guard/**"
+        methods: ALL
+
+  RESIDENT:
+    description: "Society resident / flat owner"
+    permissions:
+      - pattern: "/api/user/**"
+        methods: ALL
+      - pattern: "/api/notifications/**"
+        methods: ALL
+
+  GUARD:
+    description: "Security guard at gate"
+    permissions:
+      - pattern: "/api/guard/**"
+        methods: ALL
+      - pattern: "/api/notifications/**"
+        methods: ALL
+
+  ACCOUNTANT:
+    description: "Handles income, expenses, vouchers"
+    permissions:
+      - pattern: "/api/accountant/**"
+        methods: ALL
+      - pattern: "/api/user/**"
+        methods: [GET]
+      - pattern: "/api/notifications/**"
+        methods: ALL
+
+  PRESIDENT:
+    description: "Society president — can approve expenses"
+    permissions:
+      - pattern: "/api/accountant/**"
+        methods: ALL
+      - pattern: "/api/admin/expenses/**"
+        methods: ALL
+      - pattern: "/api/admin/vendors/**"
+        methods: [GET]
+      - pattern: "/api/admin/balance-sheet"
+        methods: [GET]
+      - pattern: "/api/admin/committee"
+        methods: [GET]
+      - pattern: "/api/admin/move-requests/**"
+        methods: ALL
+      - pattern: "/api/admin/notices/**"
+        methods: ALL
+      - pattern: "/api/user/**"
+        methods: ALL
+      - pattern: "/api/notifications/**"
+        methods: ALL
+
+  SECRETARY:
+    description: "Society secretary — manages notices, approvals, move requests"
+    permissions:
+      - pattern: "/api/accountant/**"
+        methods: ALL
+      - pattern: "/api/admin/expenses/**"
+        methods: ALL
+      - pattern: "/api/admin/vendors/**"
+        methods: [GET]
+      - pattern: "/api/admin/balance-sheet"
+        methods: [GET]
+      - pattern: "/api/admin/committee"
+        methods: [GET]
+      - pattern: "/api/admin/move-requests/**"
+        methods: ALL
+      - pattern: "/api/admin/notices/**"
+        methods: ALL
+      - pattern: "/api/admin/complaints/**"
+        methods: ALL
+      - pattern: "/api/admin/visitors/**"
+        methods: [GET]
+      - pattern: "/api/user/**"
+        methods: ALL
+      - pattern: "/api/notifications/**"
+        methods: ALL
+
+  TREASURER:
+    description: "Society treasurer — financial oversight, can approve expenses"
+    permissions:
+      - pattern: "/api/accountant/**"
+        methods: ALL
+      - pattern: "/api/admin/expenses/**"
+        methods: ALL
+      - pattern: "/api/admin/vendors/**"
+        methods: ALL
+      - pattern: "/api/admin/balance-sheet"
+        methods: [GET]
+      - pattern: "/api/admin/payments/**"
+        methods: ALL
+      - pattern: "/api/admin/reports/**"
+        methods: [GET]
+      - pattern: "/api/admin/committee"
+        methods: [GET]
+      - pattern: "/api/user/**"
+        methods: ALL
+      - pattern: "/api/notifications/**"
+        methods: ALL
+
+  COMMITTEE_MEMBER:
+    description: "General committee member — read access to admin reports"
+    permissions:
+      - pattern: "/api/admin/committee"
+        methods: [GET]
+      - pattern: "/api/admin/balance-sheet"
+        methods: [GET]
+      - pattern: "/api/admin/complaints/**"
+        methods: [GET]
+      - pattern: "/api/admin/notices/**"
+        methods: [GET]
+      - pattern: "/api/admin/move-requests/**"
+        methods: [GET]
+      - pattern: "/api/admin/visitors/**"
+        methods: [GET]
+      - pattern: "/api/user/**"
+        methods: ALL
+      - pattern: "/api/notifications/**"
+        methods: ALL
+
+# Public endpoints — always accessible without authentication
+public:
+  - "/api/auth/**"
+  - "/api/public/**"
+  - "/api/uploads/**"
+  - "/h2-console/**"
+  # Static frontend assets (served from classpath:/static/ in prod)
+  - "/index.html"
+  - "/assets/**"
+  - "/favicon.ico"
+  - "/*.png"
+  - "/*.svg"
+  - "/*.ico"

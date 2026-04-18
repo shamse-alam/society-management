@@ -245,8 +245,14 @@ public class PaymentService {
         } else if ("CUSTOM".equals(request.getPeriodMode()) && request.getPeriodFrom() != null && request.getPeriodTo() != null) {
             periodFrom = request.getPeriodFrom();
             periodTo = request.getPeriodTo();
+            if (periodFrom.getYear() < 2000 || periodTo.getYear() < 2000) {
+                throw new RuntimeException("Invalid date — year must be 2000 or later");
+            }
             periodLabel = periodFrom + " to " + periodTo;
         } else {
+            if (request.getYear() != null && request.getYear() < 2000) {
+                throw new RuntimeException("Invalid year — must be 2000 or later");
+            }
             periodFrom = LocalDate.of(request.getYear(), request.getMonth(), 1);
             periodTo = periodFrom.withDayOfMonth(periodFrom.lengthOfMonth());
             periodLabel = periodFrom.getMonth() + " " + request.getYear();
@@ -325,7 +331,7 @@ public class PaymentService {
     }
 
     public Map<String, Object> applyPenalties(PenaltyRequest request) {
-        List<Payment> overdue = paymentRepository.findByStatusAndPenaltyAppliedFalseAndDueDateBefore(
+        List<Payment> overdue = paymentRepository.findByStatusAndDueDateBefore(
                 PaymentStatus.PENDING, LocalDate.now());
 
         int applied = 0;
@@ -333,24 +339,29 @@ public class PaymentService {
             long daysOverdue = java.time.temporal.ChronoUnit.DAYS.between(payment.getDueDate(), LocalDate.now());
             if (daysOverdue <= 0) continue;
 
-            // Annual rate: penalty = amount × (rate/100) × (daysOverdue/365)
+            // 18% p.a. on total amount: penalty = amount × (rate/100) × (daysOverdue/365)
             BigDecimal penalty = payment.getAmount()
                     .multiply(request.getAnnualRate())
                     .multiply(BigDecimal.valueOf(daysOverdue))
                     .divide(BigDecimal.valueOf(36500), 2, RoundingMode.HALF_UP);
+
+            BigDecimal oldPenalty = payment.getPenaltyAmount() != null ? payment.getPenaltyAmount() : BigDecimal.ZERO;
 
             payment.setPenaltyAmount(penalty);
             payment.setPenaltyApplied(true);
             paymentRepository.save(payment);
             applied++;
 
-            notificationService.createNotification(
-                    payment.getUser(),
-                    "Late Fee Applied",
-                    "A penalty of Rs. " + penalty + " (" + daysOverdue + " days overdue @ " + request.getAnnualRate() + "% p.a.) has been added to your " + payment.getPaymentType().name() + " payment",
-                    NotificationType.PAYMENT_REMINDER,
-                    payment.getId()
-            );
+            // Only notify if penalty changed
+            if (penalty.compareTo(oldPenalty) != 0) {
+                notificationService.createNotification(
+                        payment.getUser(),
+                        "Late Fee Updated",
+                        "A penalty of Rs. " + penalty + " (" + daysOverdue + " days overdue @ " + request.getAnnualRate() + "% p.a.) has been applied to your " + payment.getPaymentType().name() + " payment",
+                        NotificationType.PAYMENT_REMINDER,
+                        payment.getId()
+                );
+            }
         }
 
         return Map.of("applied", applied, "totalOverdue", overdue.size());

@@ -1,6 +1,7 @@
 package com.society.management.controller;
 
 import com.society.management.dto.*;
+import com.society.management.security.PermissionService;
 import com.society.management.service.*;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -37,6 +38,7 @@ public class AdminController {
     private final EventService eventService;
     private final MoveService moveService;
     private final SocietyConfigService societyConfigService;
+    private final PermissionService permissionService;
 
     public AdminController(AuthService authService, UserService userService, PropertyService propertyService,
                            PaymentService paymentService, AmenityBookingService bookingService,
@@ -50,7 +52,8 @@ public class AdminController {
                            ForumService forumService,
                            EventService eventService,
                            MoveService moveService,
-                           SocietyConfigService societyConfigService) {
+                           SocietyConfigService societyConfigService,
+                           PermissionService permissionService) {
         this.authService = authService;
         this.userService = userService;
         this.propertyService = propertyService;
@@ -70,6 +73,7 @@ public class AdminController {
         this.eventService = eventService;
         this.moveService = moveService;
         this.societyConfigService = societyConfigService;
+        this.permissionService = permissionService;
     }
 
     // ---- User Management ----
@@ -87,6 +91,11 @@ public class AdminController {
     @GetMapping("/users/{id}")
     public ResponseEntity<UserResponse> getUser(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getUserById(id));
+    }
+
+    @GetMapping("/committee")
+    public ResponseEntity<List<UserResponse>> getCommitteeMembers() {
+        return ResponseEntity.ok(userService.getCommitteeMembers());
     }
 
     @PutMapping("/users/{id}")
@@ -270,6 +279,40 @@ public class AdminController {
         return ResponseEntity.ok(expenseService.getExpensesByVendor(vendorId));
     }
 
+    @GetMapping("/expenses/status/{status}")
+    public ResponseEntity<List<ExpenseResponse>> getExpensesByStatus(@PathVariable String status) {
+        return ResponseEntity.ok(expenseService.getExpensesByStatus(status));
+    }
+
+    @PutMapping("/expenses/{id}/approve")
+    public ResponseEntity<ExpenseResponse> approveExpense(@PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(expenseService.approveExpense(id, userDetails.getUsername()));
+    }
+
+    @PutMapping("/expenses/{id}/pay")
+    public ResponseEntity<ExpenseResponse> markExpensePaid(@PathVariable Long id,
+            @RequestBody ExpenseRequest request) {
+        return ResponseEntity.ok(expenseService.markAsPaid(id, request));
+    }
+
+    @PutMapping("/expenses/{id}/cancel")
+    public ResponseEntity<ExpenseResponse> cancelExpense(@PathVariable Long id) {
+        return ResponseEntity.ok(expenseService.cancelExpense(id));
+    }
+
+    @PostMapping("/expenses/generate-monthly")
+    public ResponseEntity<List<ExpenseResponse>> generateMonthlyVouchers(
+            @RequestParam int year, @RequestParam int month) {
+        return ResponseEntity.ok(expenseService.generateMonthlyVouchers(year, month));
+    }
+
+    @PostMapping("/expenses/{id}/bill")
+    public ResponseEntity<ExpenseResponse> uploadBill(@PathVariable Long id,
+            @RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(expenseService.uploadBillAttachment(id, file));
+    }
+
     // ---- Vendors ----
 
     @GetMapping("/vendors")
@@ -285,6 +328,11 @@ public class AdminController {
     @GetMapping("/vendors/{id}")
     public ResponseEntity<VendorResponse> getVendor(@PathVariable Long id) {
         return ResponseEntity.ok(vendorService.getVendorById(id));
+    }
+
+    @GetMapping("/vendors/type/{type}")
+    public ResponseEntity<List<VendorResponse>> getVendorsByType(@PathVariable String type) {
+        return ResponseEntity.ok(vendorService.getVendorsByType(type));
     }
 
     @PostMapping("/vendors")
@@ -655,5 +703,26 @@ public class AdminController {
     @PostMapping("/society-config/logo")
     public ResponseEntity<SocietyConfigResponse> uploadSocietyLogo(@RequestParam("file") MultipartFile file) {
         return ResponseEntity.ok(societyConfigService.uploadLogo(file));
+    }
+
+    // ---- Role & Permission Config ----
+
+    @GetMapping("/permissions/roles")
+    public ResponseEntity<Map<String, String>> getAllRoles() {
+        return ResponseEntity.ok(permissionService.getAllRoles());
+    }
+
+    @GetMapping("/permissions/roles/{role}")
+    public ResponseEntity<List<Map<String, Object>>> getRolePermissions(@PathVariable String role) {
+        return ResponseEntity.ok(permissionService.getRolePermissions(role));
+    }
+
+    @GetMapping("/permissions")
+    public ResponseEntity<Map<String, Object>> getFullPermissions() {
+        Map<String, Object> result = new java.util.LinkedHashMap<>();
+        var config = permissionService.getConfig();
+        result.put("roles", config.getRoles());
+        result.put("public", config.getPublicEndpoints());
+        return ResponseEntity.ok(result);
     }
 }

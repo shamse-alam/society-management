@@ -22,7 +22,7 @@ public class ForumTopicResponse {
         r.setId(t.getId());
         r.setTitle(t.getTitle());
         r.setCategory(t.getCategory());
-        r.setCreatedByName(t.getCreatedBy() != null ? t.getCreatedBy().getFullName() : null);
+        r.setCreatedByName(t.getAuthor() != null ? t.getAuthor().getFullName() : null);
         r.setPinned(t.isPinned());
         r.setLocked(t.isLocked());
         r.setReplyCount(t.getReplyCount());

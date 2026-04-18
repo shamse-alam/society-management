@@ -2,13 +2,13 @@ package com.society.management.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.time.LocalDateTime;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "family_members")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class FamilyMember {
+@Getter @Setter @NoArgsConstructor
+@AllArgsConstructor @SuperBuilder
+public class FamilyMember extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,7 +26,7 @@ public class FamilyMember {
     private String name;
 
     @Column(nullable = false)
-    private String relation; // OWNER, SPOUSE, SON, DAUGHTER, PARENT, SIBLING, TENANT, OTHER
+    private String relation;
 
     private String phone;
     private String email;
@@ -37,7 +37,4 @@ public class FamilyMember {
 
     @Builder.Default
     private boolean active = true;
-
-    @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
 }

@@ -2,13 +2,15 @@ package com.society.management.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "visitor_parking")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class VisitorParking {
+@Getter @Setter @NoArgsConstructor
+@AllArgsConstructor @SuperBuilder
+public class VisitorParking extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,7 +33,4 @@ public class VisitorParking {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "checked_in_by")
     private User checkedInBy;
-
-    @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
 }

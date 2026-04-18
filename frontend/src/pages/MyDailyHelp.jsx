@@ -6,6 +6,7 @@ import { userAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import Modal from '../components/Modal';
 import { UserCheck, Plus, X, Clock, Phone, Save } from 'lucide-react';
+import { useConfirm } from '../context/ConfirmContext';
 
 const DAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
@@ -21,6 +22,7 @@ const categoryBadge = {
 
 export default function MyDailyHelp() {
   const toast = useToast();
+  const confirm = useConfirm();
   const [loading, setLoading] = useState(true);
   const [helpers, setHelpers] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
@@ -61,7 +63,7 @@ export default function MyDailyHelp() {
   };
 
   const handleDeactivate = async (id) => {
-    if (!window.confirm('Deactivate this daily help?')) return;
+    if (!await confirm({ title: 'Deactivate Daily Help', message: 'Are you sure you want to deactivate this daily help?', confirmLabel: 'Deactivate', danger: true })) return;
     try {
       await userAPI.deactivateDailyHelp(id);
       toast.success('Daily help deactivated');

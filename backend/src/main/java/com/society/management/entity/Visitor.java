@@ -2,15 +2,14 @@ package com.society.management.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.time.LocalDateTime;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "visitors")
 @Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
-@Builder
-public class Visitor {
+@NoArgsConstructor
+@SuperBuilder
+public class Visitor extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,7 +28,4 @@ public class Visitor {
 
     @Column(length = 500)
     private String photo;
-
-    @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
 }

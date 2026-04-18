@@ -21,6 +21,8 @@ public class SocietyConfigResponse {
     private String registrationNumber;
     private List<String> propertyTypes;
     private String propertyLabel;
+    private List<String> expenseApprovalRoles;
+    private Integer expenseApprovalCount;
 
     public static SocietyConfigResponse from(SocietyConfig config) {
         SocietyConfigResponse r = new SocietyConfigResponse();
@@ -40,6 +42,13 @@ public class SocietyConfigResponse {
             r.setPropertyTypes(Collections.emptyList());
         }
         r.setPropertyLabel(config.getPropertyLabel());
+        if (config.getExpenseApprovalRoles() != null && !config.getExpenseApprovalRoles().isBlank()) {
+            r.setExpenseApprovalRoles(Arrays.stream(config.getExpenseApprovalRoles().split(","))
+                    .map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toList()));
+        } else {
+            r.setExpenseApprovalRoles(Collections.emptyList());
+        }
+        r.setExpenseApprovalCount(config.getExpenseApprovalCount());
         return r;
     }
 }

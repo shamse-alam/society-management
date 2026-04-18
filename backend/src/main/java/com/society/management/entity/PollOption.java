@@ -2,13 +2,14 @@ package com.society.management.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "poll_options")
 @Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
-@Builder
-public class PollOption {
+@NoArgsConstructor
+@SuperBuilder
+public class PollOption extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

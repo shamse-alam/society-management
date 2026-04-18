@@ -2,15 +2,16 @@ package com.society.management.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
 
 @Entity
 @Table(name = "amenities")
 @Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
-@Builder
-public class Amenity {
+@NoArgsConstructor
+@SuperBuilder
+public class Amenity extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

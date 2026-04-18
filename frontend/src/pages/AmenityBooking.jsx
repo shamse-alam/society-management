@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { adminAPI, userAPI } from '../services/api';
 import Modal from '../components/Modal';
 import { CalendarDays, Plus, XCircle, Building2, BedDouble, PartyPopper, Save } from 'lucide-react';
+import { useConfirm } from '../context/ConfirmContext';
 import { formatNumber } from '../utils/format';
 
 const AMENITY_ICONS = {
@@ -26,6 +27,7 @@ const PAYMENT_COLORS = {
 
 export default function AmenityBooking() {
   const { isAdmin } = useAuth();
+  const confirm = useConfirm();
   const [bookings, setBookings] = useState([]);
   const [amenities, setAmenities] = useState([]);
   const [users, setUsers] = useState([]);
@@ -92,7 +94,7 @@ export default function AmenityBooking() {
   };
 
   const handleCancel = async (id) => {
-    if (!window.confirm('Cancel this booking?')) return;
+    if (!await confirm({ title: 'Cancel Booking', message: 'Are you sure you want to cancel this booking?', confirmLabel: 'Cancel Booking', danger: true })) return;
     try {
       if (isAdmin) {
         await adminAPI.cancelBooking(id);

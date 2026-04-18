@@ -47,26 +47,27 @@ import PayMaintenance from './pages/PayMaintenance';
 import MembershipPayment from './pages/MembershipPayment';
 import CorpusPayment from './pages/CorpusPayment';
 import { ModalProvider } from './context/ModalContext';
+import { ConfirmProvider } from './context/ConfirmContext';
 
 function ProtectedRoute({ children, adminOnly = false, guardOnly = false }) {
-  const { user, isAdmin, isGuard } = useAuth();
+  const { user, isAdmin, isGuard, hasRole } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
-  if (guardOnly && !isGuard) return <Navigate to="/" replace />;
-  if (adminOnly && !isAdmin) return <Navigate to="/user-dashboard" replace />;
+  if (guardOnly && !isGuard && !hasRole('GUARD')) return <Navigate to="/" replace />;
+  if (adminOnly && !isAdmin && !hasRole('PRESIDENT') && !hasRole('SECRETARY') && !hasRole('ACCOUNTANT') && !hasRole('TREASURER')) return <Navigate to="/user-dashboard" replace />;
   return <Layout>{children}</Layout>;
 }
 
 function GuardRoute({ children }) {
-  const { user } = useAuth();
+  const { user, hasRole } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
-  if (user.role !== 'GUARD') return <Navigate to="/" replace />;
+  if (!hasRole('GUARD')) return <Navigate to="/" replace />;
   return <Layout>{children}</Layout>;
 }
 
 function DefaultRedirect() {
-  const { user, isAdmin, isGuard } = useAuth();
+  const { user, isAdmin, isGuard, hasRole } = useAuth();
   if (isGuard) return <Navigate to="/guard-dashboard" replace />;
-  if (isAdmin) return <Navigate to="/dashboard" replace />;
+  if (isAdmin || hasRole('PRESIDENT') || hasRole('SECRETARY')) return <Navigate to="/dashboard" replace />;
   return <Navigate to="/user-dashboard" replace />;
 }
 
@@ -152,9 +153,11 @@ export default function App() {
   return (
     <AuthProvider>
       <ModalProvider>
-        <ToastProvider>
-          <AppRoutes />
-        </ToastProvider>
+        <ConfirmProvider>
+          <ToastProvider>
+            <AppRoutes />
+          </ToastProvider>
+        </ConfirmProvider>
       </ModalProvider>
     </AuthProvider>
   );

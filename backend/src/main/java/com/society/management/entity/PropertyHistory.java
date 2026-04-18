@@ -2,15 +2,16 @@ package com.society.management.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "property_history")
 @Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
-@Builder
-public class PropertyHistory {
+@NoArgsConstructor
+@SuperBuilder
+public class PropertyHistory extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -20,15 +21,17 @@ public class PropertyHistory {
     private Long propertyId;
 
     @Column(nullable = false)
-    private String changeType; // OWNER_CHANGE, TENANT_CHANGE
+    private String changeType;
 
     private String previousValue;
     private String newValue;
 
-    // Extra detail for tenant changes
     private String previousPhone;
     private String newPhone;
 
-    @Builder.Default
-    private LocalDateTime changedAt = LocalDateTime.now();
+    // Backward compat: changedAt maps to createdAt from BaseEntity
+    @Transient
+    public LocalDateTime getChangedAt() {
+        return getCreatedAt();
+    }
 }

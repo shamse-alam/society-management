@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import Modal from '../components/Modal';
 import { Plus, Pencil, Trash2, Megaphone, AlertTriangle, Calendar, Clock, User, Search, Filter, ChevronDown, Save } from 'lucide-react';
+import { useConfirm } from '../context/ConfirmContext';
 
 const CATEGORIES = ['GENERAL', 'MAINTENANCE', 'EVENT', 'EMERGENCY', 'MEETING'];
 const PRIORITIES = ['NORMAL', 'IMPORTANT', 'URGENT'];
@@ -36,6 +37,7 @@ const emptyForm = { title: '', content: '', category: 'GENERAL', priority: 'NORM
 export default function NoticeBoard() {
   const { isAdmin } = useAuth();
   const toast = useToast();
+  const confirm = useConfirm();
   const [notices, setNotices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -100,7 +102,7 @@ export default function NoticeBoard() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this notice?')) return;
+    if (!await confirm({ title: 'Delete Notice', message: 'Are you sure you want to delete this notice?', confirmLabel: 'Delete', danger: true })) return;
     try {
       await adminAPI.deleteNotice(id);
       toast.success('Notice deleted');

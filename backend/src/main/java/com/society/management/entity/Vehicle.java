@@ -2,13 +2,13 @@ package com.society.management.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.time.LocalDateTime;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "vehicles")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class Vehicle {
+@Getter @Setter @NoArgsConstructor
+@AllArgsConstructor @SuperBuilder
+public class Vehicle extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -35,7 +35,4 @@ public class Vehicle {
 
     @Builder.Default
     private boolean active = true;
-
-    @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
 }

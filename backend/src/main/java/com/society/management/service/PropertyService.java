@@ -63,7 +63,7 @@ public class PropertyService {
     public PropertyDetailResponse getPropertyDetail(Long id) {
         Property property = propertyRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Property not found"));
-        List<PropertyHistory> history = propertyHistoryRepository.findByPropertyIdOrderByChangedAtDesc(property.getId());
+        List<PropertyHistory> history = propertyHistoryRepository.findByPropertyIdOrderByCreatedAtDesc(property.getId());
         return PropertyDetailResponse.from(property, history);
     }
 

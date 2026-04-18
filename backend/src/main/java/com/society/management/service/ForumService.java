@@ -42,7 +42,7 @@ public class ForumService {
         ForumTopic topic = ForumTopic.builder()
                 .title(req.getTitle())
                 .category(req.getCategory() != null ? req.getCategory() : "GENERAL")
-                .createdBy(user)
+                .author(user)
                 .build();
         topic = topicRepository.save(topic);
 

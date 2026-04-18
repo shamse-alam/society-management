@@ -2,16 +2,16 @@ package com.society.management.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "notices")
 @Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
-@Builder
-public class Notice {
+@NoArgsConstructor
+@SuperBuilder
+public class Notice extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,10 +24,10 @@ public class Notice {
     private String content;
 
     @Column(nullable = false)
-    private String category; // GENERAL, MAINTENANCE, EVENT, EMERGENCY, MEETING
+    private String category;
 
     @Column(nullable = false)
-    private String priority; // NORMAL, IMPORTANT, URGENT
+    private String priority;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "posted_by")
@@ -39,14 +39,4 @@ public class Notice {
 
     @Builder.Default
     private boolean active = true;
-
-    @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
-
-    private LocalDateTime updatedAt;
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 }

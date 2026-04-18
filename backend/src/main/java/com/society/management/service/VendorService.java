@@ -5,6 +5,7 @@ import com.society.management.dto.VendorRequest;
 import com.society.management.dto.VendorResponse;
 import com.society.management.entity.Vendor;
 import com.society.management.entity.VendorBankAccount;
+import com.society.management.entity.VendorType;
 import com.society.management.repository.VendorRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -15,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -49,6 +51,11 @@ public class VendorService {
                 .collect(Collectors.toList());
     }
 
+    public List<VendorResponse> getVendorsByType(String vendorType) {
+        return vendorRepository.findByVendorTypeAndActiveTrueOrderByNameAsc(VendorType.valueOf(vendorType))
+                .stream().map(VendorResponse::from).collect(Collectors.toList());
+    }
+
     public VendorResponse createVendor(VendorRequest request) {
         Vendor vendor = Vendor.builder()
                 .name(request.getName())
@@ -56,6 +63,11 @@ public class VendorService {
                 .phone(request.getPhone())
                 .email(request.getEmail())
                 .address(request.getAddress())
+                .vendorType(request.getVendorType() != null && !request.getVendorType().isBlank() ? VendorType.valueOf(request.getVendorType()) : VendorType.OTHER)
+                .monthlyAmount(request.getMonthlyAmount())
+                .contractStartDate(request.getContractStartDate() != null && !request.getContractStartDate().isBlank() ? LocalDate.parse(request.getContractStartDate()) : null)
+                .contractEndDate(request.getContractEndDate() != null && !request.getContractEndDate().isBlank() ? LocalDate.parse(request.getContractEndDate()) : null)
+                .gstNumber(request.getGstNumber())
                 .build();
         syncBankAccounts(vendor, request.getBankAccounts());
         return VendorResponse.from(vendorRepository.save(vendor));
@@ -72,6 +84,13 @@ public class VendorService {
         if (request.getActive() != null) {
             vendor.setActive(request.getActive());
         }
+        if (request.getVendorType() != null && !request.getVendorType().isBlank()) {
+            vendor.setVendorType(VendorType.valueOf(request.getVendorType()));
+        }
+        vendor.setMonthlyAmount(request.getMonthlyAmount());
+        vendor.setContractStartDate(request.getContractStartDate() != null && !request.getContractStartDate().isBlank() ? LocalDate.parse(request.getContractStartDate()) : null);
+        vendor.setContractEndDate(request.getContractEndDate() != null && !request.getContractEndDate().isBlank() ? LocalDate.parse(request.getContractEndDate()) : null);
+        vendor.setGstNumber(request.getGstNumber());
         syncBankAccounts(vendor, request.getBankAccounts());
         return VendorResponse.from(vendorRepository.save(vendor));
     }
