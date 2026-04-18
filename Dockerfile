@@ -7,8 +7,8 @@
 # Stage 1: Build frontend
 FROM node:20-alpine AS frontend-build
 WORKDIR /app/frontend
-COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci
+COPY frontend/package.json ./
+RUN npm install --legacy-peer-deps --no-audit
 COPY frontend/ .
 # No VITE_API_URL needed — frontend uses relative /api paths served by same origin
 RUN npm run build
