@@ -12,6 +12,6 @@ RUN rm -f /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
-ENV PORT=8080
+ENV PORT=3000
 ENV BACKEND_URL=http://backend:8080
 CMD ["/docker-entrypoint.sh"]
