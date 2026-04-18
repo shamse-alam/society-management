@@ -1,11 +1,20 @@
 #!/bin/sh
 set -e
 
-echo "Configuring nginx with PORT=$PORT and BACKEND_URL=$BACKEND_URL"
+# Railway sets PORT dynamically; default to 8080 if not set
+PORT="${PORT:-8080}"
 
-cat > /etc/nginx/conf.d/default.conf <<EOF
+echo "=== Frontend Container Starting ==="
+echo "PORT=$PORT"
+echo "BACKEND_URL=$BACKEND_URL"
+
+# Remove default nginx config to avoid port conflicts
+rm -f /etc/nginx/conf.d/default.conf
+
+cat > /etc/nginx/conf.d/app.conf <<EOF
 server {
-    listen $PORT;
+    listen $PORT default_server;
+    listen [::]:$PORT default_server;
     root /usr/share/nginx/html;
     index index.html;
 
@@ -28,7 +37,8 @@ server {
 }
 EOF
 
-echo "Generated nginx config:"
-cat /etc/nginx/conf.d/default.conf
+echo "=== Generated nginx config ==="
+cat /etc/nginx/conf.d/app.conf
+echo "=== Starting nginx on port $PORT ==="
 
 exec nginx -g 'daemon off;'
