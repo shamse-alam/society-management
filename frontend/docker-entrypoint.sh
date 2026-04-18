@@ -18,6 +18,13 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
+    # Health check endpoint
+    location /healthz {
+        access_log off;
+        return 200 'ok';
+        add_header Content-Type text/plain;
+    }
+
     location / {
         try_files \$uri \$uri/ /index.html;
     }
