@@ -9,7 +9,8 @@ RUN npm run build
 
 FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf.template
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
 ENV PORT=80
 ENV BACKEND_URL=http://backend:8080
-CMD ["/bin/sh", "-c", "sed -e \"s|__PORT__|$PORT|g\" -e \"s|__BACKEND_URL__|$BACKEND_URL|g\" /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
+CMD ["/docker-entrypoint.sh"]
