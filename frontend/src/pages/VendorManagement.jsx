@@ -7,7 +7,7 @@ import Modal from '../components/Modal';
 import { Plus, Pencil, Trash2, Search, Upload, Store, Landmark, Save } from 'lucide-react';
 import { useConfirm } from '../context/ConfirmContext';
 import { useToast } from '../components/Toast';
-import { useSocietyConfig } from '../context/SocietyConfigContext';
+import { useSocietyConfig, typeName } from '../context/SocietyConfigContext';
 import { getTypeColor } from '../utils/typeColors';
 import { useNavigate } from 'react-router-dom';
 
@@ -188,7 +188,7 @@ export default function VendorManagement() {
                       </div>
                     </td>
                     <td className="px-5 py-3">
-                      <span className={`inline-flex px-2 py-0.5 rounded text-[11px] font-medium ${getTypeColor(vendor.category)}`}>{vendor.category}</span>
+                      <span className={`inline-flex px-2 py-0.5 rounded text-[11px] font-medium ${getTypeColor(vendor.category)}`}>{typeName(vendor.category, [], expenseTypes)}</span>
                     </td>
                     <td className="px-5 py-3">
                       <span className={`inline-flex px-2 py-0.5 rounded text-[11px] font-medium ${vendor.vendorType === 'CONTRACT' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-500/15 dark:text-gray-400'}`}>{vendor.vendorType || 'OTHER'}</span>

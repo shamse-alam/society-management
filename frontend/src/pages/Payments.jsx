@@ -8,7 +8,7 @@ import UserAvatar from '../components/UserAvatar';
 import { Plus, Receipt, IndianRupee, TrendingUp, Clock, CheckCircle2, Eye, Download, Pencil, ChevronDown, FileText, AlertTriangle, CreditCard, Save } from 'lucide-react';
 import InfoTooltip from '../components/InfoTooltip';
 import { useToast } from '../components/Toast';
-import { useSocietyConfig } from '../context/SocietyConfigContext';
+import { useSocietyConfig, typeName } from '../context/SocietyConfigContext';
 import { getTypeColor } from '../utils/typeColors';
 import Chart from 'react-apexcharts';
 import jsPDF from 'jspdf';
@@ -25,7 +25,7 @@ const STATUS_COLORS = {
 
 const fmt = (n) => Number(n).toLocaleString('en-IN', { minimumFractionDigits: 0 });
 
-function IncomeCharts({ payments }) {
+function IncomeCharts({ payments, incomeTypes = [] }) {
   const isDark = document.documentElement.classList.contains('dark');
   const chartColors = ['#1a6dd1', '#0da684', '#4a94e0', '#f4a14d', '#41cbd8', '#ef3463', '#e96d8e', '#5db7de'];
 
@@ -47,7 +47,7 @@ function IncomeCharts({ payments }) {
   const typeData = useMemo(() => {
     const types = {};
     payments.filter(p => p.status === 'PAID').forEach(p => {
-      const t = p.paymentType?.replace(/_/g, ' ') || 'Other';
+      const t = typeName(p.paymentType, incomeTypes) || 'Other';
       types[t] = (types[t] || 0) + Number(p.amount);
     });
     return { labels: Object.keys(types), series: Object.values(types) };
@@ -286,7 +286,7 @@ export default function Payments() {
     doc.autoTable({
       startY: 75, head: [['Description', 'Period', 'Amount', 'Penalty', 'Total']],
       body: [[
-        p.paymentType?.replace(/_/g, ' '),
+        typeName(p.paymentType, incomeTypes),
         p.periodFrom && p.periodTo ? `${p.periodFrom} to ${p.periodTo}` : 'One Time',
         `Rs. ${fmt(p.amount)}`,
         p.penaltyAmount > 0 ? `Rs. ${fmt(p.penaltyAmount)}` : '-',
@@ -317,7 +317,7 @@ export default function Payments() {
     doc.setFontSize(10); doc.text(`Generated: ${new Date().toLocaleDateString('en-IN')}`, 14, 28);
     doc.autoTable({
       startY: 35, head: [['Receipt', 'Member', propertyLabel, 'Type', 'Status', 'Amount', 'Date']],
-      body: allFiltered.map(p => [p.receiptNumber, p.fullName, p.unitNumber || '-', p.paymentType?.replace(/_/g, ' '), p.status, `₹${fmt(p.amount)}`, formatDate(p.paidAt)]),
+      body: allFiltered.map(p => [p.receiptNumber, p.fullName, p.unitNumber || '-', typeName(p.paymentType, incomeTypes), p.status, `₹${fmt(p.amount)}`, formatDate(p.paidAt)]),
       styles: { fontSize: 9, font: 'helvetica' },
       headStyles: { fillColor: [49, 103, 243] },
       foot: [['', '', '', '', 'Total', `₹${fmt(allFiltered.reduce((s, p) => s + Number(p.amount), 0))}`, '']],
@@ -327,7 +327,7 @@ export default function Payments() {
   };
 
   const exportExcel = () => {
-    const data = allFiltered.map(p => ({ Receipt: p.receiptNumber, Member: p.fullName, [propertyLabel]: p.unitNumber || '-', Type: p.paymentType?.replace(/_/g, ' '), Status: p.status, Amount: Number(p.amount), Date: formatDate(p.paidAt) }));
+    const data = allFiltered.map(p => ({ Receipt: p.receiptNumber, Member: p.fullName, [propertyLabel]: p.unitNumber || '-', Type: typeName(p.paymentType, incomeTypes), Status: p.status, Amount: Number(p.amount), Date: formatDate(p.paidAt) }));
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Payments');
@@ -394,7 +394,7 @@ export default function Payments() {
       </div>
 
       {/* Charts */}
-      {payments.length > 0 && <IncomeCharts payments={payments} />}
+      {payments.length > 0 && <IncomeCharts payments={payments} incomeTypes={incomeTypes} />}
 
       {/* Income Register - Collapsible */}
       <div className="bg-card rounded-lg border border-border overflow-hidden">
@@ -454,7 +454,7 @@ export default function Payments() {
                     </td>
                     <td className="px-5 py-3">
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${getTypeColor(p.paymentType)}`}>
-                        {p.paymentType.replace(/_/g, ' ')}
+                        {typeName(p.paymentType, incomeTypes)}
                       </span>
                     </td>
                     <td className="px-5 py-3">
@@ -652,7 +652,7 @@ export default function Payments() {
                             <option value="">-- Select Invoice --</option>
                             {pendingInvoices.map(inv => (
                               <option key={inv.id} value={inv.id}>
-                                {inv.receiptNumber || `INV-${inv.id}`} — {inv.paymentType.replace(/_/g, ' ')} — ₹{fmt(Number(inv.amount) + Number(inv.penaltyAmount || 0))}{inv.periodFrom ? ` (${inv.periodFrom} to ${inv.periodTo})` : ''}
+                                {inv.receiptNumber || `INV-${inv.id}`} — {typeName(inv.paymentType, incomeTypes)} — ₹{fmt(Number(inv.amount) + Number(inv.penaltyAmount || 0))}{inv.periodFrom ? ` (${inv.periodFrom} to ${inv.periodTo})` : ''}
                               </option>
                             ))}
                           </select>
@@ -698,7 +698,7 @@ export default function Payments() {
                     </div>
                     <div className="flex justify-between text-[13px]">
                       <span className="text-muted">Type</span>
-                      <span className="font-medium text-heading">{inv.paymentType.replace(/_/g, ' ')}</span>
+                      <span className="font-medium text-heading">{typeName(inv.paymentType, incomeTypes)}</span>
                     </div>
                     {inv.periodFrom && (
                       <div className="flex justify-between text-[13px]">

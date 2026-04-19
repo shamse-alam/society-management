@@ -11,7 +11,7 @@ import Chart from 'react-apexcharts';
 import UserAvatar from '../components/UserAvatar';
 import { DashboardSkeleton } from '../components/Skeleton';
 import EmptyState from '../components/EmptyState';
-import { useSocietyConfig } from '../context/SocietyConfigContext';
+import { useSocietyConfig, typeName } from '../context/SocietyConfigContext';
 import GuardDashboard from './GuardDashboard';
 
 const fmt = (n) => Number(n).toLocaleString('en-IN', { minimumFractionDigits: 0 });
@@ -24,7 +24,7 @@ const PRIORITY_BORDER = {
 
 export default function Home() {
   const { user, isAdmin, hasRole } = useAuth();
-  const { config } = useSocietyConfig();
+  const { config, incomeTypes } = useSocietyConfig();
   const propertyLabel = config?.propertyLabel || 'Property';
 
   const showAdmin = isAdmin || hasRole('PRESIDENT') || hasRole('SECRETARY') || hasRole('TREASURER') || hasRole('ACCOUNTANT');
@@ -141,11 +141,11 @@ export default function Home() {
   const paymentTypeData = useMemo(() => {
     const types = {};
     payments.filter(p => p.status === 'PAID').forEach(p => {
-      const t = p.paymentType?.replace(/_/g, ' ') || 'Other';
+      const t = typeName(p.paymentType, incomeTypes) || 'Other';
       types[t] = (types[t] || 0) + Number(p.amount);
     });
     return { labels: Object.keys(types), series: Object.values(types) };
-  }, [payments]);
+  }, [payments, incomeTypes]);
 
   const propertyData = useMemo(() => ({
     labels: ['Occupied', 'Vacant', 'Rented'],
@@ -389,7 +389,7 @@ export default function Home() {
                           <UserAvatar name={p.fullName} src={p.profileImage} />
                           <div className="flex-1 min-w-0">
                             <p className="text-[13px] font-medium text-heading truncate">{p.fullName}</p>
-                            <p className="text-[11px] text-muted">{p.paymentType?.replace(/_/g, ' ')}</p>
+                            <p className="text-[11px] text-muted">{typeName(p.paymentType, incomeTypes)}</p>
                           </div>
                           <span className="text-[13px] font-semibold text-heading">₹{fmt(p.amount)}</span>
                         </div>
@@ -468,7 +468,7 @@ export default function Home() {
                     ) : recentUserPayments.map(p => (
                       <div key={p.id} className="px-5 py-3 flex items-center justify-between">
                         <div>
-                          <p className="text-[13px] font-medium text-heading">{p.paymentType?.replace(/_/g, ' ')}</p>
+                          <p className="text-[13px] font-medium text-heading">{typeName(p.paymentType, incomeTypes)}</p>
                           <p className="text-[11px] text-muted">{p.paidAt ? new Date(p.paidAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}</p>
                         </div>
                         <span className="text-[13px] font-semibold text-green-600 dark:text-green-400">₹{fmt(p.amount)}</span>

@@ -4,12 +4,14 @@ import { useParams, Link } from 'react-router-dom';
 import { adminAPI } from '../services/api';
 import { ArrowLeft, Phone, Mail, MapPin, Store, IndianRupee, Receipt, CalendarDays, Tag, CheckCircle2, XCircle, ChevronDown, Landmark } from 'lucide-react';
 import { formatDate } from '../utils/format';
+import { useSocietyConfig, typeName } from '../context/SocietyConfigContext';
 import { getTypeColor } from '../utils/typeColors';
 
 const fmt = (n) => Number(n).toLocaleString('en-IN', { minimumFractionDigits: 0 });
 
 export default function VendorDetail() {
   const { id } = useParams();
+  const { expenseTypes } = useSocietyConfig();
   const [vendor, setVendor] = useState(null);
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,11 +46,11 @@ export default function VendorDetail() {
   const categoryBreakdown = useMemo(() => {
     const cats = {};
     expenses.forEach(e => {
-      const c = e.category?.replace(/_/g, ' ') || 'Other';
+      const c = typeName(e.category, [], expenseTypes) || 'Other';
       cats[c] = (cats[c] || 0) + Number(e.amount);
     });
     return Object.entries(cats).sort((a, b) => b[1] - a[1]);
-  }, [expenses]);
+  }, [expenses, expenseTypes]);
 
   const PAGE_SIZE = 30;
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -79,7 +81,7 @@ export default function VendorDetail() {
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 <h1 className="text-xl font-semibold text-heading">{vendor.name}</h1>
-                <span className={`inline-flex px-2 py-0.5 rounded text-[11px] font-medium ${getTypeColor(vendor.category)}`}>{vendor.category}</span>
+                <span className={`inline-flex px-2 py-0.5 rounded text-[11px] font-medium ${getTypeColor(vendor.category)}`}>{typeName(vendor.category, [], expenseTypes)}</span>
                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${vendor.active ? 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400'}`}>
                   {vendor.active ? <><CheckCircle2 className="w-3 h-3" /> Active</> : <><XCircle className="w-3 h-3" /> Inactive</>}
                 </span>
@@ -188,7 +190,7 @@ export default function VendorDetail() {
                       <tr key={exp.id} className="border-b border-dashed border-border hover:bg-card-hover transition-colors">
                         <td className="px-5 py-3 text-[13px] text-muted">{exp.expenseDate}</td>
                         <td className="px-5 py-3"><span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${getTypeColor(exp.category)}`}>
-                            {exp.category?.replace(/_/g, ' ')}
+                            {typeName(exp.category, [], expenseTypes)}
                           </span></td>
                         <td className="px-5 py-3 text-[13px] text-muted">{exp.description || '-'}</td>
                         <td className="px-5 py-3 text-right text-[13px] font-semibold text-red-700 dark:text-red-400">₹{fmt(exp.amount)}</td>

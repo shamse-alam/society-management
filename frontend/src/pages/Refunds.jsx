@@ -6,6 +6,7 @@ import { adminAPI } from '../services/api';
 import Modal from '../components/Modal';
 import { Plus, Search, CheckCircle, XCircle, Clock, Banknote, Save, ChevronDown, RotateCcw, Receipt } from 'lucide-react';
 import { useConfirm } from '../context/ConfirmContext';
+import { useSocietyConfig, typeName } from '../context/SocietyConfigContext';
 import { getTypeColor } from '../utils/typeColors';
 const fmt = (n) => Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 0 });
 
@@ -22,6 +23,7 @@ const STATUS_ICONS = {
 
 export default function Refunds() {
   const confirm = useConfirm();
+  const { incomeTypes } = useSocietyConfig();
   const [refunds, setRefunds] = useState([]);
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -214,7 +216,7 @@ export default function Refunds() {
                     <td className="px-5 py-3">
                       <p className="text-[13px] text-heading">{ref.receiptNumber}</p>
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${getTypeColor(ref.paymentType)}`}>
-                        {ref.paymentType?.replace(/_/g, ' ')}
+                        {typeName(ref.paymentType, incomeTypes)}
                       </span>
                       {ref.paymentDescription && <p className="text-[11px] text-muted truncate max-w-[180px] mt-0.5">{ref.paymentDescription}</p>}
                     </td>
@@ -294,7 +296,7 @@ export default function Refunds() {
                           </div>
                           <div className="flex items-center gap-2 mt-0.5">
                             <span className="text-[11px] text-muted">{p.receiptNumber}</span>
-                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${getTypeColor(p.paymentType)}`}>{p.paymentType?.replace(/_/g, ' ')}</span>
+                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${getTypeColor(p.paymentType)}`}>{typeName(p.paymentType, incomeTypes)}</span>
                             <span className="text-[11px] text-muted">{p.paidAt?.split('T')[0]}</span>
                           </div>
                         </div>
@@ -327,7 +329,7 @@ export default function Refunds() {
                     <div className="flex justify-between"><span className="text-indigo-700 dark:text-indigo-300">Resident</span><span className="font-medium text-indigo-800 dark:text-indigo-300">{selectedPayment.fullName}</span></div>
                     <div className="flex justify-between"><span className="text-indigo-700 dark:text-indigo-300">Unit</span><span className="font-medium text-indigo-800 dark:text-indigo-300">{selectedPayment.unitNumber}</span></div>
                     <div className="flex justify-between"><span className="text-indigo-700 dark:text-indigo-300">Receipt</span><span className="font-medium text-indigo-800 dark:text-indigo-300">{selectedPayment.receiptNumber}</span></div>
-                    <div className="flex justify-between"><span className="text-indigo-700 dark:text-indigo-300">Type</span><span className="font-medium text-indigo-800 dark:text-indigo-300">{selectedPayment.paymentType?.replace(/_/g, ' ')}</span></div>
+                    <div className="flex justify-between"><span className="text-indigo-700 dark:text-indigo-300">Type</span><span className="font-medium text-indigo-800 dark:text-indigo-300">{typeName(selectedPayment.paymentType, incomeTypes)}</span></div>
                     <div className="flex justify-between"><span className="text-indigo-700 dark:text-indigo-300">Amount</span><span className="font-bold text-indigo-800 dark:text-indigo-300">₹{fmt(selectedPayment.amount)}</span></div>
                     <div className="flex justify-between"><span className="text-indigo-700 dark:text-indigo-300">Paid On</span><span className="font-medium text-indigo-800 dark:text-indigo-300">{selectedPayment.paidAt?.split('T')[0]}</span></div>
                   </div>

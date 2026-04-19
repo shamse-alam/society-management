@@ -6,7 +6,7 @@ import { adminAPI } from '../services/api';
 import Modal from '../components/Modal';
 import { Plus, Trash2, IndianRupee, Search, TrendingDown, Receipt, Tag, Download, ChevronDown, Save, CheckCircle, XCircle, Clock, Banknote, Upload, FileText, Calendar } from 'lucide-react';
 import { useConfirm } from '../context/ConfirmContext';
-import { useSocietyConfig } from '../context/SocietyConfigContext';
+import { useSocietyConfig, typeName } from '../context/SocietyConfigContext';
 import { getTypeColor } from '../utils/typeColors';
 import Chart from 'react-apexcharts';
 import jsPDF from 'jspdf';
@@ -188,7 +188,7 @@ export default function Expenses() {
   const categoryData = useMemo(() => {
     const cats = {};
     expenses.forEach(e => {
-      const c = e.category?.replace(/_/g, ' ') || 'Other';
+      const c = typeName(e.category, [], expenseTypes) || 'Other';
       cats[c] = (cats[c] || 0) + Number(e.amount);
     });
     return { labels: Object.keys(cats), series: Object.values(cats) };
@@ -248,14 +248,14 @@ export default function Expenses() {
             doc.setFontSize(16); doc.text('Expense Report', 14, 20);
             doc.setFontSize(10); doc.text(`Generated: ${new Date().toLocaleDateString('en-IN')}`, 14, 28);
             doc.autoTable({ startY: 35, head: [['Voucher', 'Date', 'Category', 'Paid To', 'Amount', 'Status']],
-              body: allFiltered.map(e => [e.voucherNumber || '-', e.expenseDate, e.category?.replace(/_/g, ' '), e.paidTo || '-', `₹${fmt(e.amount)}`, e.status || 'DRAFT']),
+              body: allFiltered.map(e => [e.voucherNumber || '-', e.expenseDate, typeName(e.category, [], expenseTypes), e.paidTo || '-', `₹${fmt(e.amount)}`, e.status || 'DRAFT']),
               styles: { fontSize: 9 }, headStyles: { fillColor: [239, 52, 99] },
               foot: [['', '', '', 'Total', `₹${fmt(totalAmount)}`, '']], footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
             });
             doc.save('expenses-report.pdf');
           }} className="btn-outline inline-flex items-center gap-1.5 px-3 py-2 border border-border rounded text-[13px] font-medium text-sub hover:bg-card-hover transition-colors"><Download className="w-3.5 h-3.5" /> PDF</button>
           <button onClick={() => {
-            const data = allFiltered.map(e => ({ Voucher: e.voucherNumber || '-', Date: e.expenseDate, Category: e.category?.replace(/_/g, ' '), 'Paid To': e.paidTo || '-', Description: e.description || '-', Amount: Number(e.amount), Status: e.status || 'DRAFT', 'Payment Mode': e.paymentMode || '-' }));
+            const data = allFiltered.map(e => ({ Voucher: e.voucherNumber || '-', Date: e.expenseDate, Category: typeName(e.category, [], expenseTypes), 'Paid To': e.paidTo || '-', Description: e.description || '-', Amount: Number(e.amount), Status: e.status || 'DRAFT', 'Payment Mode': e.paymentMode || '-' }));
             const ws = XLSX.utils.json_to_sheet(data);
             const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Expenses');
             saveAs(new Blob([XLSX.write(wb, { bookType: 'xlsx', type: 'array' })]), 'expenses-report.xlsx');
@@ -365,7 +365,7 @@ export default function Expenses() {
         {/* Filters */}
         <div className="flex flex-wrap items-end gap-3 px-5 py-3 border-t border-border">
           <div className="flex-1 min-w-[200px]"><div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" /><input type="text" value={search} onChange={(e) => { setSearch(e.target.value); setVisibleCount(PAGE_SIZE); }} placeholder="Search expenses..." className="w-full pl-10 pr-3 py-2 bg-input-bg border border-input-border rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-[13px] text-heading placeholder:text-muted" /></div></div>
-          <select value={filterCategory} onChange={(e) => { setFilterCategory(e.target.value); setVisibleCount(PAGE_SIZE); }} className="px-3 py-2 bg-input-bg border border-input-border rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-[13px] text-heading"><option value="">All Categories</option>{EXPENSE_CATEGORIES.map(c => <option key={c} value={c}>{c.replace(/_/g, ' ')}</option>)}</select>
+          <select value={filterCategory} onChange={(e) => { setFilterCategory(e.target.value); setVisibleCount(PAGE_SIZE); }} className="px-3 py-2 bg-input-bg border border-input-border rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-[13px] text-heading"><option value="">All Categories</option>{EXPENSE_CATEGORIES.map(c => <option key={c} value={c}>{typeName(c, [], expenseTypes)}</option>)}</select>
           <select value={filterStatus} onChange={(e) => { setFilterStatus(e.target.value); setVisibleCount(PAGE_SIZE); }} className="px-3 py-2 bg-input-bg border border-input-border rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-[13px] text-heading"><option value="">All Statuses</option>{EXPENSE_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}</select>
         </div>
 
@@ -396,7 +396,7 @@ export default function Expenses() {
                     <td className="px-5 py-3 text-[13px] text-muted">{exp.expenseDate}</td>
                     <td className="px-5 py-3">
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${getTypeColor(exp.category)}`}>
-                        {exp.category?.replace(/_/g, ' ')}
+                        {typeName(exp.category, [], expenseTypes)}
                       </span>
                     </td>
                     <td className="px-5 py-3">
@@ -520,7 +520,7 @@ export default function Expenses() {
                 <div className="bg-card border border-border rounded-xl p-5">
                   <h2 className="text-[14px] font-semibold text-heading mb-1">Category</h2>
                   <p className="text-[11px] text-muted mb-3">Expense head for classification.</p>
-                  <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading">{EXPENSE_CATEGORIES.map(c => <option key={c} value={c}>{c.replace(/_/g, ' ')}</option>)}</select>
+                  <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading">{EXPENSE_CATEGORIES.map(c => <option key={c} value={c}>{typeName(c, [], expenseTypes)}</option>)}</select>
                 </div>
                 <div className="bg-card border border-border rounded-xl p-5">
                   <h2 className="text-[14px] font-semibold text-heading mb-1">Workflow</h2>
@@ -660,7 +660,7 @@ export default function Expenses() {
                               <span className="text-[13px] font-semibold text-red-700 dark:text-red-400">₹{fmt(v.amount)}</span>
                             </div>
                             <div className="flex items-center justify-between mt-0.5">
-                              <span className="text-[11px] text-muted">{v.paidTo} &middot; {v.category?.replace(/_/g, ' ')}</span>
+                              <span className="text-[11px] text-muted">{v.paidTo} &middot; {typeName(v.category, [], expenseTypes)}</span>
                               <span className="text-[11px] text-muted">{v.expenseDate}</span>
                             </div>
                             {v.description && <p className="text-[11px] text-muted truncate mt-0.5">{v.description}</p>}

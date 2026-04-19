@@ -39,3 +39,10 @@ export function SocietyConfigProvider({ children }) {
 }
 
 export const useSocietyConfig = () => useContext(SocietyConfigContext);
+
+/** Look up display name for an income or expense type code. Falls back to formatted code. */
+export function typeName(code, incomeTypes = [], expenseTypes = []) {
+  if (!code) return '';
+  const found = incomeTypes.find(t => t.code === code) || expenseTypes.find(t => t.code === code);
+  return found?.displayName || code.replace(/_/g, ' ');
+}

@@ -3,7 +3,7 @@ import { TableSkeleton } from '../components/Skeleton';
 import { useState, useEffect, useCallback } from 'react';
 import { adminAPI } from '../services/api';
 import { IndianRupee, FileDown, FileSpreadsheet, Filter, RotateCcw } from 'lucide-react';
-import { useSocietyConfig } from '../context/SocietyConfigContext';
+import { useSocietyConfig, typeName } from '../context/SocietyConfigContext';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
@@ -33,7 +33,8 @@ function computeGST(amount) {
 }
 
 export default function GSTReport() {
-  const { config: societyConfig } = useSocietyConfig();
+  const { config: societyConfig, incomeTypes, expenseTypes } = useSocietyConfig();
+  const tn = (code) => typeName(code, incomeTypes, expenseTypes);
   const defaults = getDefaultDates();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -96,7 +97,7 @@ export default function GSTReport() {
       startY: y,
       head: [['Particulars', 'Invoice Value (Incl. Tax)', 'Taxable Value', `CGST @${GST_RATE / 2}%`, `SGST @${GST_RATE / 2}%`, 'Total Tax']],
       body: [
-        ...incomeGST.map(i => [i.type.replace(/_/g, ' '), fmt(i.amount), fmt(i.base), fmt(i.cgst), fmt(i.sgst), fmt(i.cgst + i.sgst)]),
+        ...incomeGST.map(i => [tn(i.type), fmt(i.amount), fmt(i.base), fmt(i.cgst), fmt(i.sgst), fmt(i.cgst + i.sgst)]),
         [{ content: 'Total Output Tax', styles: { fontStyle: 'bold' } }, fmt(data.totalIncome), fmt(incomeGST.reduce((s, i) => s + i.base, 0)), fmt(totalOutputCGST), fmt(totalOutputSGST), fmt(totalOutputCGST + totalOutputSGST)],
       ],
       theme: 'grid', styles: { fontSize: 9, cellPadding: 2 },
@@ -113,7 +114,7 @@ export default function GSTReport() {
         startY: y,
         head: [['Particulars', 'Credit Note Value', 'Taxable Value', `CGST @${GST_RATE / 2}%`, `SGST @${GST_RATE / 2}%`, 'Total Tax Reversal']],
         body: [
-          ...refundGST.map(i => [i.type.replace(/_/g, ' '), fmt(i.amount), fmt(i.base), fmt(i.cgst), fmt(i.sgst), fmt(i.cgst + i.sgst)]),
+          ...refundGST.map(i => [tn(i.type), fmt(i.amount), fmt(i.base), fmt(i.cgst), fmt(i.sgst), fmt(i.cgst + i.sgst)]),
           [{ content: 'Total Credit Notes', styles: { fontStyle: 'bold' } }, fmt(data.totalRefunds), fmt(refundGST.reduce((s, i) => s + i.base, 0)), fmt(totalRefundCGST), fmt(totalRefundSGST), fmt(totalRefundCGST + totalRefundSGST)],
         ],
         theme: 'grid', styles: { fontSize: 9, cellPadding: 2 },
@@ -130,7 +131,7 @@ export default function GSTReport() {
       startY: y,
       head: [['Particulars', 'Invoice Value (Incl. Tax)', 'Taxable Value', `CGST @${GST_RATE / 2}%`, `SGST @${GST_RATE / 2}%`, 'Total Tax']],
       body: [
-        ...expenseGST.map(i => [i.category.replace(/_/g, ' '), fmt(i.amount), fmt(i.base), fmt(i.cgst), fmt(i.sgst), fmt(i.cgst + i.sgst)]),
+        ...expenseGST.map(i => [tn(i.category), fmt(i.amount), fmt(i.base), fmt(i.cgst), fmt(i.sgst), fmt(i.cgst + i.sgst)]),
         [{ content: 'Total Input Tax Credit', styles: { fontStyle: 'bold' } }, fmt(data.totalExpense), fmt(expenseGST.reduce((s, i) => s + i.base, 0)), fmt(totalInputCGST), fmt(totalInputSGST), fmt(totalInputCGST + totalInputSGST)],
       ],
       theme: 'grid', styles: { fontSize: 9, cellPadding: 2 },
@@ -173,19 +174,19 @@ export default function GSTReport() {
       [],
       ['OUTPUT TAX LIABILITY (On Outward Supplies)'],
       ['Particulars', 'Invoice Value (Incl. Tax)', 'Taxable Value', `CGST @${GST_RATE / 2}%`, `SGST @${GST_RATE / 2}%`, 'Total Tax'],
-      ...incomeGST.map(i => [i.type.replace(/_/g, ' '), Number(i.amount), i.base, i.cgst, i.sgst, i.cgst + i.sgst]),
+      ...incomeGST.map(i => [tn(i.type), Number(i.amount), i.base, i.cgst, i.sgst, i.cgst + i.sgst]),
       ['Total Output Tax', Number(data.totalIncome), incomeGST.reduce((s, i) => s + i.base, 0), totalOutputCGST, totalOutputSGST, totalOutputCGST + totalOutputSGST],
       [],
       ...(refundGST.length > 0 ? [
         ['CREDIT NOTES (Refunds / Reversals)'],
         ['Particulars', 'Credit Note Value', 'Taxable Value', `CGST @${GST_RATE / 2}%`, `SGST @${GST_RATE / 2}%`, 'Total Tax Reversal'],
-        ...refundGST.map(i => [i.type.replace(/_/g, ' '), Number(i.amount), i.base, i.cgst, i.sgst, i.cgst + i.sgst]),
+        ...refundGST.map(i => [tn(i.type), Number(i.amount), i.base, i.cgst, i.sgst, i.cgst + i.sgst]),
         ['Total Credit Notes', Number(data.totalRefunds), refundGST.reduce((s, i) => s + i.base, 0), totalRefundCGST, totalRefundSGST, totalRefundCGST + totalRefundSGST],
         [],
       ] : []),
       ['INPUT TAX CREDIT (On Inward Supplies)'],
       ['Particulars', 'Invoice Value (Incl. Tax)', 'Taxable Value', `CGST @${GST_RATE / 2}%`, `SGST @${GST_RATE / 2}%`, 'Total Tax'],
-      ...expenseGST.map(i => [i.category.replace(/_/g, ' '), Number(i.amount), i.base, i.cgst, i.sgst, i.cgst + i.sgst]),
+      ...expenseGST.map(i => [tn(i.category), Number(i.amount), i.base, i.cgst, i.sgst, i.cgst + i.sgst]),
       ['Total Input Tax Credit', Number(data.totalExpense), expenseGST.reduce((s, i) => s + i.base, 0), totalInputCGST, totalInputSGST, totalInputCGST + totalInputSGST],
       [],
       ['NET TAX LIABILITY'],
@@ -273,7 +274,7 @@ export default function GSTReport() {
                 <tbody>
                   {incomeGST.map((i) => (
                     <tr key={i.type} className="border-b border-dashed border-border hover:bg-card-hover transition-colors">
-                      <td className="px-5 py-3 text-[13px] font-medium text-heading">{i.type.replace(/_/g, ' ')}</td>
+                      <td className="px-5 py-3 text-[13px] font-medium text-heading">{tn(i.type)}</td>
                       <td className="px-5 py-3 text-right text-[13px] text-muted">{fmt(i.amount)}</td>
                       <td className="px-5 py-3 text-right text-[13px] text-muted">{fmt(i.base)}</td>
                       <td className="px-5 py-3 text-right text-[13px] text-muted">{fmt(i.cgst)}</td>
@@ -320,7 +321,7 @@ export default function GSTReport() {
                       <tr key={i.type} className="border-b border-dashed border-border hover:bg-card-hover transition-colors">
                         <td className="px-5 py-3 text-[13px] font-medium text-heading flex items-center gap-1.5">
                           <RotateCcw className="w-3 h-3 text-orange-500" />
-                          {i.type.replace(/_/g, ' ')}
+                          {tn(i.type)}
                         </td>
                         <td className="px-5 py-3 text-right text-[13px] text-muted">{fmt(i.amount)}</td>
                         <td className="px-5 py-3 text-right text-[13px] text-muted">{fmt(i.base)}</td>
@@ -361,7 +362,7 @@ export default function GSTReport() {
                 <tbody>
                   {expenseGST.map((i) => (
                     <tr key={i.category} className="border-b border-dashed border-border hover:bg-card-hover transition-colors">
-                      <td className="px-5 py-3 text-[13px] font-medium text-heading">{i.category.replace(/_/g, ' ')}</td>
+                      <td className="px-5 py-3 text-[13px] font-medium text-heading">{tn(i.category)}</td>
                       <td className="px-5 py-3 text-right text-[13px] text-muted">{fmt(i.amount)}</td>
                       <td className="px-5 py-3 text-right text-[13px] text-muted">{fmt(i.base)}</td>
                       <td className="px-5 py-3 text-right text-[13px] text-muted">{fmt(i.cgst)}</td>

@@ -6,6 +6,7 @@ import { userAPI } from '../services/api';
 import { Link } from 'react-router-dom';
 import { CreditCard, CalendarDays, MessageSquare, Megaphone, BarChart3, IndianRupee, Clock, AlertCircle, CheckCircle2, ArrowUpRight, Home, LayoutDashboard } from 'lucide-react';
 import UserAvatar from '../components/UserAvatar';
+import { useSocietyConfig, typeName } from '../context/SocietyConfigContext';
 
 const fmt = (n) => Number(n).toLocaleString('en-IN', { minimumFractionDigits: 0 });
 
@@ -24,6 +25,7 @@ const PRIORITY_BORDER = {
 
 export default function UserDashboard() {
   const { user } = useAuth();
+  const { incomeTypes } = useSocietyConfig();
   const [loading, setLoading] = useState(true);
   const [payments, setPayments] = useState([]);
   const [bookings, setBookings] = useState([]);
@@ -166,7 +168,7 @@ export default function UserDashboard() {
             ) : recentPayments.map(p => (
               <div key={p.id} className="px-5 py-3 flex items-center justify-between">
                 <div>
-                  <p className="text-[13px] font-medium text-heading">{p.paymentType?.replace(/_/g, ' ')}</p>
+                  <p className="text-[13px] font-medium text-heading">{typeName(p.paymentType, incomeTypes)}</p>
                   <p className="text-[11px] text-muted">{p.paidAt ? new Date(p.paidAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}</p>
                 </div>
                 <span className="text-[13px] font-semibold text-green-600 dark:text-green-400">₹{fmt(p.amount)}</span>

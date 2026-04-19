@@ -3,7 +3,7 @@ import EmptyState from '../components/EmptyState';
 import { useState, useEffect, useMemo } from 'react';
 import { userAPI } from '../services/api';
 import { Receipt, AlertCircle, Clock, CheckCircle2, RotateCcw, X } from 'lucide-react';
-import { useSocietyConfig } from '../context/SocietyConfigContext';
+import { useSocietyConfig, typeName } from '../context/SocietyConfigContext';
 import { formatDate, formatNumber } from '../utils/format';
 
 const STATUS_COLORS = {
@@ -187,7 +187,7 @@ export default function MyDues() {
                       {refunds.map(r => (
                         <tr key={r.id} className="border-b border-dashed border-border hover:bg-card-hover transition-colors">
                           <td className="px-5 py-3 text-[13px] font-medium text-heading">{r.refundNumber}</td>
-                          <td className="px-5 py-3 text-[13px] text-muted">{r.receiptNumber} ({r.paymentType})</td>
+                          <td className="px-5 py-3 text-[13px] text-muted">{r.receiptNumber} ({typeName(r.paymentType, incomeTypes)})</td>
                           <td className="px-5 py-3 text-[13px] text-muted max-w-[200px] truncate">{r.reason || '-'}</td>
                           <td className="px-5 py-3">
                             <span className={`inline-flex px-2 py-0.5 rounded text-[11px] font-medium ${REFUND_STATUS_COLORS[r.status] || ''}`}>{r.status}</span>

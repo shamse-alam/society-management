@@ -3,7 +3,7 @@ import { TableSkeleton } from '../components/Skeleton';
 import { useState, useEffect, useCallback } from 'react';
 import { adminAPI } from '../services/api';
 import { IndianRupee, Filter, FileDown, FileSpreadsheet, Building2, Printer, CalendarDays, ChevronDown, Lock, Unlock, RotateCcw } from 'lucide-react';
-import { useSocietyConfig } from '../context/SocietyConfigContext';
+import { useSocietyConfig, typeName } from '../context/SocietyConfigContext';
 import { getTypeColor } from '../utils/typeColors';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -26,7 +26,8 @@ function formatDateIndian(d) {
 }
 
 export default function BalanceSheet() {
-  const { config: societyConfig, incomeTypes } = useSocietyConfig();
+  const { config: societyConfig, incomeTypes, expenseTypes } = useSocietyConfig();
+  const tn = (code) => typeName(code, incomeTypes, expenseTypes);
   const reserveFundCodes = incomeTypes.filter(t => t.reserveFund).map(t => t.code);
   const defaults = getDefaultDates();
   const [data, setData] = useState(null);
@@ -76,7 +77,7 @@ export default function BalanceSheet() {
       startY: y,
       head: [['Sl.', 'Particulars', 'Count', 'Amount (Rs.)']],
       body: [
-        ...data.incomeBreakdown.map((item, i) => [i + 1, item.type.replace(/_/g, ' '), item.count, fmt(item.amount)]),
+        ...data.incomeBreakdown.map((item, i) => [i + 1, tn(item.type), item.count, fmt(item.amount)]),
         [{ content: 'Total Income (A)', colSpan: 3, styles: { fontStyle: 'bold', halign: 'right' } }, { content: fmt(data.totalIncome), styles: { fontStyle: 'bold' } }],
       ],
       theme: 'grid', styles: { fontSize: 9, cellPadding: 2 },
@@ -92,7 +93,7 @@ export default function BalanceSheet() {
       startY: y,
       head: [['Sl.', 'Particulars', 'Count', 'Amount (Rs.)']],
       body: [
-        ...data.expenseBreakdown.map((item, i) => [i + 1, item.category.replace(/_/g, ' '), item.count, fmt(item.amount)]),
+        ...data.expenseBreakdown.map((item, i) => [i + 1, tn(item.category), item.count, fmt(item.amount)]),
         [{ content: 'Total Expenditure (B)', colSpan: 3, styles: { fontStyle: 'bold', halign: 'right' } }, { content: fmt(data.totalExpense), styles: { fontStyle: 'bold' } }],
       ],
       theme: 'grid', styles: { fontSize: 9, cellPadding: 2 },
@@ -110,7 +111,7 @@ export default function BalanceSheet() {
         startY: y,
         head: [['Sl.', 'Income Type Reversed', 'Count', 'Amount (Rs.)']],
         body: [
-          ...data.refundBreakdown.map((item, i) => [i + 1, item.type.replace(/_/g, ' '), item.count, fmt(item.amount)]),
+          ...data.refundBreakdown.map((item, i) => [i + 1, tn(item.type), item.count, fmt(item.amount)]),
           [{ content: 'Total Refunds', colSpan: 3, styles: { fontStyle: 'bold', halign: 'right' } }, { content: fmt(data.totalRefunds), styles: { fontStyle: 'bold' } }],
         ],
         theme: 'grid', styles: { fontSize: 9, cellPadding: 2 },
@@ -129,7 +130,7 @@ export default function BalanceSheet() {
         startY: y,
         head: [['Fund Type', 'Collected (Rs.)', 'Released (Rs.)', 'Locked (Rs.)']],
         body: [
-          ...data.reserveBreakdown.map(item => [item.fundType.replace(/_/g, ' '), fmt(item.collected), fmt(item.released), fmt(item.locked)]),
+          ...data.reserveBreakdown.map(item => [tn(item.fundType), fmt(item.collected), fmt(item.released), fmt(item.locked)]),
           [{ content: 'Totals', styles: { fontStyle: 'bold' } }, { content: fmt(data.totalReserveFunds ?? 0), styles: { fontStyle: 'bold' } }, { content: fmt(data.releasedReserveFunds ?? 0), styles: { fontStyle: 'bold' } }, { content: fmt(data.lockedReserveFunds ?? 0), styles: { fontStyle: 'bold' } }],
         ],
         theme: 'grid', styles: { fontSize: 9, cellPadding: 2 },
@@ -165,7 +166,7 @@ export default function BalanceSheet() {
       autoTable(doc, {
         startY: y,
         head: [['Date', 'Type', 'Received From', 'Description', 'Amount (Rs.)']],
-        body: data.incomeItems.map(item => [item.date, item.type.replace(/_/g, ' '), item.from, item.description || '-', fmt(item.amount)]),
+        body: data.incomeItems.map(item => [item.date, tn(item.type), item.from, item.description || '-', fmt(item.amount)]),
         theme: 'grid', styles: { fontSize: 8, cellPadding: 1.5 },
         headStyles: { fillColor: [13, 166, 132], textColor: 255, fontStyle: 'bold' },
         columnStyles: { 4: { halign: 'right' } },
@@ -181,7 +182,7 @@ export default function BalanceSheet() {
       autoTable(doc, {
         startY: y,
         head: [['Date', 'Category', 'Paid To', 'Description', 'Amount (Rs.)']],
-        body: data.expenseItems.map(item => [item.expenseDate, item.category.replace(/_/g, ' '), item.paidTo || '-', item.description || '-', fmt(item.amount)]),
+        body: data.expenseItems.map(item => [item.expenseDate, tn(item.category), item.paidTo || '-', item.description || '-', fmt(item.amount)]),
         theme: 'grid', styles: { fontSize: 8, cellPadding: 1.5 },
         headStyles: { fillColor: [239, 52, 99], textColor: 255, fontStyle: 'bold' },
         columnStyles: { 4: { halign: 'right' } },
@@ -203,25 +204,25 @@ export default function BalanceSheet() {
       [],
       ['INCOME BREAKDOWN'],
       ['Particulars', 'Count', 'Amount (Rs.)'],
-      ...data.incomeBreakdown.map(i => [i.type.replace(/_/g, ' '), i.count, Number(i.amount)]),
+      ...data.incomeBreakdown.map(i => [tn(i.type), i.count, Number(i.amount)]),
       ['Total Income', '', Number(data.totalIncome)],
       [],
       ['EXPENDITURE BREAKDOWN'],
       ['Particulars', 'Count', 'Amount (Rs.)'],
-      ...data.expenseBreakdown.map(i => [i.category.replace(/_/g, ' '), i.count, Number(i.amount)]),
+      ...data.expenseBreakdown.map(i => [tn(i.category), i.count, Number(i.amount)]),
       ['Total Expenditure', '', Number(data.totalExpense)],
       [],
       ...(data.refundBreakdown && data.refundBreakdown.length > 0 ? [
         ['REFUNDS / REVERSALS'],
         ['Income Type Reversed', 'Count', 'Amount (Rs.)'],
-        ...data.refundBreakdown.map(i => [i.type.replace(/_/g, ' '), i.count, Number(i.amount)]),
+        ...data.refundBreakdown.map(i => [tn(i.type), i.count, Number(i.amount)]),
         ['Total Refunds', '', Number(data.totalRefunds)],
         [],
       ] : []),
       ...(data.reserveBreakdown && data.reserveBreakdown.length > 0 ? [
         ['RESERVE FUND SUMMARY'],
         ['Fund Type', 'Collected (Rs.)', 'Released (Rs.)', 'Locked (Rs.)'],
-        ...data.reserveBreakdown.map(i => [i.fundType.replace(/_/g, ' '), Number(i.collected), Number(i.released), Number(i.locked)]),
+        ...data.reserveBreakdown.map(i => [tn(i.fundType), Number(i.collected), Number(i.released), Number(i.locked)]),
         ['Totals', Number(data.totalReserveFunds ?? 0), Number(data.releasedReserveFunds ?? 0), Number(data.lockedReserveFunds ?? 0)],
         [],
       ] : []),
@@ -238,14 +239,14 @@ export default function BalanceSheet() {
     XLSX.utils.book_append_sheet(wb, ws1, 'Summary');
 
     if (data.incomeItems.length > 0) {
-      const incData = [['Date', 'Type', 'Received From', 'Description', 'Amount (Rs.)'], ...data.incomeItems.map(i => [i.date, i.type.replace(/_/g, ' '), i.from, i.description || '-', Number(i.amount)])];
+      const incData = [['Date', 'Type', 'Received From', 'Description', 'Amount (Rs.)'], ...data.incomeItems.map(i => [i.date, tn(i.type), i.from, i.description || '-', Number(i.amount)])];
       const ws2 = XLSX.utils.aoa_to_sheet(incData);
       ws2['!cols'] = [{ wch: 12 }, { wch: 18 }, { wch: 25 }, { wch: 30 }, { wch: 15 }];
       XLSX.utils.book_append_sheet(wb, ws2, 'Income Details');
     }
 
     if (data.expenseItems.length > 0) {
-      const expData = [['Date', 'Category', 'Paid To', 'Description', 'Amount (Rs.)'], ...data.expenseItems.map(i => [i.expenseDate, i.category.replace(/_/g, ' '), i.paidTo || '-', i.description || '-', Number(i.amount)])];
+      const expData = [['Date', 'Category', 'Paid To', 'Description', 'Amount (Rs.)'], ...data.expenseItems.map(i => [i.expenseDate, tn(i.category), i.paidTo || '-', i.description || '-', Number(i.amount)])];
       const ws3 = XLSX.utils.aoa_to_sheet(expData);
       ws3['!cols'] = [{ wch: 12 }, { wch: 18 }, { wch: 25 }, { wch: 30 }, { wch: 15 }];
       XLSX.utils.book_append_sheet(wb, ws3, 'Expense Details');
@@ -357,7 +358,7 @@ export default function BalanceSheet() {
                               <td className="px-4 py-2.5 text-[13px] text-muted">{i + 1}</td>
                               <td className="px-4 py-2.5 text-[13px] font-medium text-heading">
                                 <span className="inline-flex items-center gap-1.5">
-                                  {item.type.replace(/_/g, ' ')}
+                                  {tn(item.type)}
                                   {isReserve && <Lock className="w-3 h-3 text-amber-500" title="Reserve Fund - Locked" />}
                                 </span>
                               </td>
@@ -398,7 +399,7 @@ export default function BalanceSheet() {
                         {data.expenseBreakdown.map((item, i) => (
                           <tr key={item.category} className="border-b border-dashed border-border">
                             <td className="px-4 py-2.5 text-[13px] text-muted">{i + 1}</td>
-                            <td className="px-4 py-2.5 text-[13px] font-medium text-heading">{item.category.replace(/_/g, ' ')}</td>
+                            <td className="px-4 py-2.5 text-[13px] font-medium text-heading">{tn(item.category)}</td>
                             <td className="px-4 py-2.5 text-[13px] text-muted text-center">{item.count}</td>
                             <td className="px-4 py-2.5 text-[13px] text-heading text-right">{fmt(item.amount)}</td>
                           </tr>
@@ -440,7 +441,7 @@ export default function BalanceSheet() {
                           <td className="px-4 py-2.5 text-[13px] font-medium text-heading">
                             <span className="inline-flex items-center gap-1.5">
                               <RotateCcw className="w-3 h-3 text-orange-500" />
-                              {item.type.replace(/_/g, ' ')}
+                              {tn(item.type)}
                             </span>
                           </td>
                           <td className="px-4 py-2.5 text-[13px] text-muted text-center">{item.count}</td>
@@ -480,7 +481,7 @@ export default function BalanceSheet() {
                         <tr key={item.fundType} className="border-b border-dashed border-border">
                           <td className="px-4 py-2.5 text-[13px] font-medium text-heading flex items-center gap-1.5">
                             <Lock className="w-3 h-3 text-amber-500" />
-                            {item.fundType.replace(/_/g, ' ')}
+                            {tn(item.fundType)}
                           </td>
                           <td className="px-4 py-2.5 text-[13px] text-heading text-right">{fmt(item.collected)}</td>
                           <td className="px-4 py-2.5 text-[13px] text-emerald-600 dark:text-emerald-400 text-right">{fmt(item.released)}</td>
@@ -604,7 +605,7 @@ export default function BalanceSheet() {
                             <td className="px-5 py-3 text-[13px] text-muted">{item.date}</td>
                             <td className="px-5 py-3">
                               <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${getTypeColor(item.type)}`}>
-                                {item.type.replace(/_/g, ' ')}
+                                {tn(item.type)}
                                 {isReserve && <Lock className="w-2.5 h-2.5" />}
                               </span>
                             </td>
@@ -658,7 +659,7 @@ export default function BalanceSheet() {
                             <td className="px-5 py-3 text-[13px] text-muted">{item.expenseDate}</td>
                             <td className="px-5 py-3">
                               <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${getTypeColor(item.category)}`}>
-                                {item.category.replace(/_/g, ' ')}
+                                {tn(item.category)}
                               </span>
                             </td>
                             <td className="px-5 py-3 text-[13px] font-medium text-heading">{item.paidTo || '-'}</td>

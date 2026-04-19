@@ -5,7 +5,7 @@ import { useParams, Link } from 'react-router-dom';
 import { adminAPI } from '../services/api';
 import UserAvatar from '../components/UserAvatar';
 import { ArrowLeft, Mail, Phone, MapPin, Home, IndianRupee, CalendarDays, CreditCard, Clock, CheckCircle2, XCircle, ChevronDown, AlertCircle } from 'lucide-react';
-import { useSocietyConfig } from '../context/SocietyConfigContext';
+import { useSocietyConfig, typeName } from '../context/SocietyConfigContext';
 import { getTypeColor } from '../utils/typeColors';
 import { formatDate } from '../utils/format';
 
@@ -20,7 +20,7 @@ const STATUS_COLORS = {
 
 export default function OwnerDetail() {
   const { id } = useParams();
-  const { config } = useSocietyConfig();
+  const { config, incomeTypes } = useSocietyConfig();
   const propertyLabel = config?.propertyLabel || 'Property';
   const [user, setUser] = useState(null);
   const [payments, setPayments] = useState([]);
@@ -157,7 +157,7 @@ export default function OwnerDetail() {
                   {pendingPayments.map(p => (
                     <tr key={p.id} className="border-b border-dashed border-border">
                       <td className="px-5 py-3"><span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${getTypeColor(p.paymentType)}`}>
-                          {p.paymentType?.replace(/_/g, ' ')}
+                          {typeName(p.paymentType, incomeTypes)}
                         </span></td>
                       <td className="px-5 py-3 text-[13px] text-muted">{p.description || '-'}</td>
                       <td className="px-5 py-3 text-[13px] text-muted">{p.periodFrom && p.periodTo ? `${p.periodFrom} to ${p.periodTo}` : 'One Time'}</td>
@@ -205,7 +205,7 @@ export default function OwnerDetail() {
                   <tr key={p.id} className="border-b border-dashed border-border hover:bg-card-hover transition-colors">
                     <td className="px-5 py-3 text-[13px] font-medium text-heading">{p.receiptNumber}</td>
                     <td className="px-5 py-3"><span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${getTypeColor(p.paymentType)}`}>
-                        {p.paymentType?.replace(/_/g, ' ')}
+                        {typeName(p.paymentType, incomeTypes)}
                       </span></td>
                     <td className="px-5 py-3"><span className={`inline-flex px-2 py-0.5 rounded text-[11px] font-medium ${STATUS_COLORS[p.status]}`}>{p.status}</span></td>
                     <td className="px-5 py-3 text-[13px] text-muted">{p.periodFrom && p.periodTo ? `${p.periodFrom} to ${p.periodTo}` : 'One Time'}</td>

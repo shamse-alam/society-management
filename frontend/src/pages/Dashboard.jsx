@@ -8,13 +8,13 @@ import { Users, Building2, Home, KeyRound, CreditCard, CalendarDays, Clock, Indi
 import { Link } from 'react-router-dom';
 import Chart from 'react-apexcharts';
 import UserAvatar from '../components/UserAvatar';
-import { useSocietyConfig } from '../context/SocietyConfigContext';
+import { useSocietyConfig, typeName } from '../context/SocietyConfigContext';
 
 const fmt = (n) => Number(n).toLocaleString('en-IN', { minimumFractionDigits: 0 });
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { config } = useSocietyConfig();
+  const { config, incomeTypes } = useSocietyConfig();
   const propertyLabel = config?.propertyLabel || 'Property';
   const [stats, setStats] = useState({ users: 0, properties: 0, occupied: 0, vacant: 0, rented: 0 });
   const [payments, setPayments] = useState([]);
@@ -83,11 +83,11 @@ export default function Dashboard() {
   const paymentTypeData = useMemo(() => {
     const types = {};
     payments.filter(p => p.status === 'PAID').forEach(p => {
-      const t = p.paymentType?.replace(/_/g, ' ') || 'Other';
+      const t = typeName(p.paymentType, incomeTypes) || 'Other';
       types[t] = (types[t] || 0) + Number(p.amount);
     });
     return { labels: Object.keys(types), series: Object.values(types) };
-  }, [payments]);
+  }, [payments, incomeTypes]);
 
   // Property occupancy
   const propertyData = useMemo(() => ({
@@ -306,7 +306,7 @@ export default function Dashboard() {
                       <UserAvatar name={p.fullName} src={p.profileImage} />
                       <div className="flex-1 min-w-0">
                         <p className="text-[13px] font-medium text-heading truncate">{p.fullName}</p>
-                        <p className="text-[11px] text-muted">{p.paymentType?.replace(/_/g, ' ')}</p>
+                        <p className="text-[11px] text-muted">{typeName(p.paymentType, incomeTypes)}</p>
                       </div>
                       <span className="text-[13px] font-semibold text-heading">₹{fmt(p.amount)}</span>
                     </div>

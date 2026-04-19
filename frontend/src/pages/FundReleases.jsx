@@ -6,7 +6,7 @@ import { adminAPI } from '../services/api';
 import Modal from '../components/Modal';
 import { Plus, Lock, Unlock, Search, CheckCircle, XCircle, Clock, IndianRupee, Save, Landmark, ChevronDown } from 'lucide-react';
 import { useConfirm } from '../context/ConfirmContext';
-import { useSocietyConfig } from '../context/SocietyConfigContext';
+import { useSocietyConfig, typeName } from '../context/SocietyConfigContext';
 import { getTypeColor } from '../utils/typeColors';
 const fmt = (n) => Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 0 });
 
@@ -284,7 +284,7 @@ export default function FundReleases() {
                     <td className="px-5 py-3 text-[13px] text-muted">{rel.createdAt?.split('T')[0]}</td>
                     <td className="px-5 py-3">
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${getTypeColor(rel.fundType)}`}>
-                        {rel.fundType?.replace(/_/g, ' ')}
+                        {typeName(rel.fundType, incomeTypes)}
                       </span>
                     </td>
                     <td className="px-5 py-3">
