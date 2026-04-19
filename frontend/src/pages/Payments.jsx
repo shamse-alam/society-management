@@ -136,7 +136,7 @@ export default function Payments() {
     if (incType?.oneTime) {
       setInvoiceForm(f => ({ ...f, paymentType, periodMode: 'ONE_TIME', calculationMode: 'LUMPSUM' }));
     } else {
-      setInvoiceForm(f => ({ ...f, paymentType, periodMode: f.periodMode === 'ONE_TIME' ? 'MONTHLY' : f.periodMode, calculationMode: 'LUMPSUM' }));
+      setInvoiceForm(f => ({ ...f, paymentType, periodMode: f.periodMode === 'ONE_TIME' ? 'MONTHLY' : f.periodMode }));
     }
   };
   const [penaltyForm, setPenaltyForm] = useState({ annualRate: '18' });
