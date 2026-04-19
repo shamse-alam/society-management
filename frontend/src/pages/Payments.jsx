@@ -105,6 +105,11 @@ function IncomeCharts({ payments }) {
 }
 
 export default function Payments() {
+  const toast = useToast();
+  const { config: societyConfig, incomeTypes } = useSocietyConfig();
+  const propertyLabel = societyConfig?.propertyLabel || 'Property';
+  const defaultIncomeCode = incomeTypes.find(t => !t.systemManaged)?.code || '';
+
   const [activeTab, setActiveTab] = useState('ALL');
   const [payments, setPayments] = useState([]);
   const [users, setUsers] = useState([]);
@@ -121,23 +126,20 @@ export default function Payments() {
   const [editId, setEditId] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [editType, setEditType] = useState('MAINTENANCE');
+  const [editType, setEditType] = useState('ALL');
   const [registerOpen, setRegisterOpen] = useState(true);
   const [invoiceModal, setInvoiceModal] = useState(false);
   const [penaltyModal, setPenaltyModal] = useState(false);
-  const [invoiceForm, setInvoiceForm] = useState({ periodMode: 'MONTHLY', month: new Date().getMonth() + 1, year: new Date().getFullYear(), periodFrom: '', periodTo: '', paymentType: 'MAINTENANCE', calculationMode: 'PER_SQFT', amountPerUnit: '', ratePerSqFt: '', dueDays: 15, dueDate: '' });
+  const [invoiceForm, setInvoiceForm] = useState({ periodMode: 'MONTHLY', month: new Date().getMonth() + 1, year: new Date().getFullYear(), periodFrom: '', periodTo: '', paymentType: defaultIncomeCode, calculationMode: 'PER_SQFT', amountPerUnit: '', ratePerSqFt: '', dueDays: 15, dueDate: '' });
   const handleInvoiceTypeChange = (paymentType) => {
     const incType = incomeTypes.find(t => t.code === paymentType);
     if (incType?.oneTime) {
       setInvoiceForm(f => ({ ...f, paymentType, periodMode: 'ONE_TIME', calculationMode: 'LUMPSUM' }));
     } else {
-      setInvoiceForm(f => ({ ...f, paymentType, periodMode: f.periodMode === 'ONE_TIME' ? 'MONTHLY' : f.periodMode, calculationMode: paymentType === 'MAINTENANCE' ? 'PER_SQFT' : 'LUMPSUM' }));
+      setInvoiceForm(f => ({ ...f, paymentType, periodMode: f.periodMode === 'ONE_TIME' ? 'MONTHLY' : f.periodMode, calculationMode: 'LUMPSUM' }));
     }
   };
   const [penaltyForm, setPenaltyForm] = useState({ annualRate: '18' });
-  const toast = useToast();
-  const { config: societyConfig, incomeTypes } = useSocietyConfig();
-  const propertyLabel = societyConfig?.propertyLabel || 'Property';
 
   // Build dynamic PAYMENT_TYPES tabs from context
   const PAYMENT_TYPES = [{ value: 'ALL', label: 'All Receipts' }, ...incomeTypes.map(t => ({ value: t.code, label: t.displayName }))];
@@ -555,7 +557,7 @@ export default function Payments() {
               <div className="space-y-6 md:sticky md:top-4 md:self-start">
                 <div className="bg-card border border-border rounded-xl p-5">
                   <h2 className="text-[14px] font-semibold text-heading mb-1">Payment Type</h2>
-                  <p className="text-[11px] text-muted mb-3"><InfoTooltip text={invoiceForm.paymentType === 'MAINTENANCE' ? `Maintenance is calculated as Rate Per Sq.Ft × ${propertyLabel} Area. Invoices will be generated for all occupied ${propertyLabel.toLowerCase()}s.` : `This will create PENDING invoices for all ${propertyLabel.toLowerCase()}s that have an assigned resident.`} /> Select the type of invoice to generate.</p>
+                  <p className="text-[11px] text-muted mb-3"><InfoTooltip text={invoiceForm.calculationMode === 'PER_SQFT' ? `Calculated as Rate Per Sq.Ft × ${propertyLabel} Area. Invoices will be generated for all occupied ${propertyLabel.toLowerCase()}s.` : `This will create PENDING invoices for all ${propertyLabel.toLowerCase()}s that have an assigned resident.`} /> Select the type of invoice to generate.</p>
                   <select value={invoiceForm.paymentType} onChange={e => handleInvoiceTypeChange(e.target.value)} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading">
                     {incomeTypes.filter(t => !t.systemManaged).map(t => (
                       <option key={t.code} value={t.code}>{t.displayName}</option>

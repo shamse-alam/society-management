@@ -9,7 +9,11 @@ const { client, login, request } = require('./api-client');
 // ── Test user definitions (one per role) ──────────────────────────────
 const TEST_USERS = {
   admin:    { username: 'admin', password: 'welcome' }, // seeded by DataInitializer
-  guard:    { username: 'guard', password: 'welcome' }, // seeded by DataInitializer
+  guard: {
+    username: 'e2e_guard', password: 'welcome', firstName: 'E2E', lastName: 'Guard',
+    email: 'e2e_guard@test.com', phone: '+91-9100000020', unitNumber: 'GATE-1',
+    roles: ['GUARD'],
+  },
   resident: {
     username: 'e2e_resident', password: 'welcome', firstName: 'E2E', lastName: 'Resident',
     email: 'e2e_resident@test.com', phone: '+91-9100000001', unitNumber: 'A-101',
@@ -106,7 +110,7 @@ async function seedTestUsers() {
 
   const created = {};
   for (const [role, user] of Object.entries(TEST_USERS)) {
-    if (role === 'admin' || role === 'guard') continue; // already seeded
+    if (role === 'admin') continue; // already seeded by DataInitializer
 
     if (existingUsernames.has(user.username)) {
       const found = existing.find(u => u.username === user.username);
@@ -236,9 +240,53 @@ async function seedTestEmergencyContact() {
   return data.id;
 }
 
+async function seedIncomeTypes() {
+  const api = apiAs('admin');
+  const { data: existing } = await api.get('/admin/income-types');
+  const existingCodes = new Set(existing.map(t => t.code));
+
+  const types = [
+    { code: 'MAINTENANCE', displayName: 'Maintenance', gstApplicable: true, reserveFund: false, oneTime: false, displayOrder: 1 },
+    { code: 'CORPUS', displayName: 'Corpus Fund', gstApplicable: true, reserveFund: true, oneTime: true, displayOrder: 2 },
+    { code: 'MEMBERSHIP', displayName: 'Membership', gstApplicable: false, reserveFund: true, oneTime: true, displayOrder: 3 },
+    { code: 'AMENITY_BOOKING', displayName: 'Amenity Booking', gstApplicable: true, reserveFund: false, oneTime: false, systemManaged: true, displayOrder: 4 },
+  ];
+  for (const t of types) {
+    if (!existingCodes.has(t.code)) {
+      await api.post('/admin/income-types', t);
+    }
+  }
+}
+
+async function seedExpenseTypes() {
+  const api = apiAs('admin');
+  const { data: existing } = await api.get('/admin/expense-types');
+  const existingCodes = new Set(existing.map(t => t.code));
+
+  const types = [
+    { code: 'ELECTRICITY', displayName: 'Electricity', gstIncluded: true, displayOrder: 1 },
+    { code: 'WATER', displayName: 'Water', gstIncluded: true, displayOrder: 2 },
+    { code: 'SECURITY', displayName: 'Security', gstIncluded: true, displayOrder: 3 },
+    { code: 'MAINTENANCE', displayName: 'Maintenance', gstIncluded: true, displayOrder: 4 },
+    { code: 'SALARY', displayName: 'Salary', gstIncluded: false, displayOrder: 5 },
+    { code: 'CLEANING', displayName: 'Cleaning', gstIncluded: true, displayOrder: 6 },
+    { code: 'GARDENING', displayName: 'Gardening', gstIncluded: true, displayOrder: 7 },
+    { code: 'REPAIRS', displayName: 'Repairs', gstIncluded: true, displayOrder: 8 },
+    { code: 'OTHER', displayName: 'Other', gstIncluded: true, displayOrder: 9 },
+  ];
+  for (const t of types) {
+    if (!existingCodes.has(t.code)) {
+      await api.post('/admin/expense-types', t);
+    }
+  }
+}
+
 /** Master seed — call once in global setup. Returns all created IDs. */
 async function seedAll() {
   const userIds = await seedTestUsers();
+  // Seed config types before other data (payments/expenses depend on them)
+  await seedIncomeTypes();
+  await seedExpenseTypes();
   const [propertyId, noticeId, amenityId, vendorId, pollId, eventId, emergencyContactId] =
     await Promise.all([
       seedTestProperty(),
@@ -257,4 +305,5 @@ module.exports = {
   TEST_USERS, getToken, apiAs, seedAll,
   seedTestUsers, seedTestProperty, seedTestNotice, seedTestAmenity,
   seedTestVendor, seedTestPoll, seedTestEvent, seedTestEmergencyContact,
+  seedIncomeTypes, seedExpenseTypes,
 };

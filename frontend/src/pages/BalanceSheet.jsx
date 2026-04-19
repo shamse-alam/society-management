@@ -26,7 +26,8 @@ function formatDateIndian(d) {
 }
 
 export default function BalanceSheet() {
-  const { config: societyConfig } = useSocietyConfig();
+  const { config: societyConfig, incomeTypes } = useSocietyConfig();
+  const reserveFundCodes = incomeTypes.filter(t => t.reserveFund).map(t => t.code);
   const defaults = getDefaultDates();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -350,7 +351,7 @@ export default function BalanceSheet() {
                     ) : (
                       <>
                         {data.incomeBreakdown.map((item, i) => {
-                          const isReserve = item.type === 'CORPUS' || item.type === 'MEMBERSHIP';
+                          const isReserve = reserveFundCodes.includes(item.type);
                           return (
                             <tr key={item.type} className="border-b border-dashed border-border">
                               <td className="px-4 py-2.5 text-[13px] text-muted">{i + 1}</td>

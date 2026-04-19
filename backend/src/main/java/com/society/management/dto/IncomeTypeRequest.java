@@ -12,6 +12,7 @@ public class IncomeTypeRequest {
     private boolean gstApplicable = true;
     private boolean reserveFund = false;
     private boolean oneTime = false;
+    private boolean systemManaged = false;
     private int displayOrder = 0;
     private boolean active = true;
 }

@@ -55,6 +55,7 @@ public class TypeConfigService {
                 .gstApplicable(request.isGstApplicable())
                 .reserveFund(request.isReserveFund())
                 .oneTime(request.isOneTime())
+                .systemManaged(request.isSystemManaged())
                 .displayOrder(request.getDisplayOrder())
                 .active(request.isActive())
                 .build();

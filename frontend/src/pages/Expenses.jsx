@@ -37,7 +37,8 @@ export default function Expenses() {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [voucherMode, setVoucherMode] = useState('onetime'); // 'onetime' | 'monthly'
-  const [form, setForm] = useState({ category: 'MAINTENANCE', amount: '', description: '', paidTo: '', vendorId: '', expenseDate: new Date().toISOString().split('T')[0], notes: '' });
+  const defaultExpenseCode = expenseTypes[0]?.code || '';
+  const [form, setForm] = useState({ category: defaultExpenseCode, amount: '', description: '', paidTo: '', vendorId: '', expenseDate: new Date().toISOString().split('T')[0], notes: '' });
   const [genYear, setGenYear] = useState(new Date().getFullYear());
   const [genMonth, setGenMonth] = useState(new Date().getMonth() + 1);
   const [saving, setSaving] = useState(false);
@@ -70,7 +71,7 @@ export default function Expenses() {
 
   const openModal = () => {
     setVoucherMode('onetime');
-    setForm({ category: 'MAINTENANCE', amount: '', description: '', paidTo: '', vendorId: '', expenseDate: new Date().toISOString().split('T')[0], notes: '' });
+    setForm({ category: defaultExpenseCode, amount: '', description: '', paidTo: '', vendorId: '', expenseDate: new Date().toISOString().split('T')[0], notes: '' });
     setGenYear(new Date().getFullYear());
     setGenMonth(new Date().getMonth() + 1);
     setError(''); setModalOpen(true);

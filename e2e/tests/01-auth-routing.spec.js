@@ -36,7 +36,7 @@ test.describe('Authentication', () => {
   });
 
   test('guard login redirects to /home', async ({ page }) => {
-    await loginViaUI(page, 'guard', 'welcome');
+    await loginViaUI(page, TEST_USERS.guard.username, 'welcome');
     await expect(page).toHaveURL(/\/home/);
   });
 
