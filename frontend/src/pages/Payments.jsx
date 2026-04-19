@@ -217,6 +217,19 @@ export default function Payments() {
 
   const handleGenerateInvoices = async (e) => {
     e.preventDefault();
+    // Validate dates before sending
+    if (invoiceForm.periodMode === 'CUSTOM') {
+      const fromYear = new Date(invoiceForm.periodFrom).getFullYear();
+      const toYear = new Date(invoiceForm.periodTo).getFullYear();
+      if (fromYear < 2000 || fromYear > 2099 || toYear < 2000 || toYear > 2099) {
+        toast.error('Invalid date — year must be between 2000 and 2099');
+        return;
+      }
+    }
+    if (invoiceForm.periodMode === 'MONTHLY' && (invoiceForm.year < 2000 || invoiceForm.year > 2099)) {
+      toast.error('Invalid year — must be between 2000 and 2099');
+      return;
+    }
     setSaving(true);
     try {
       const isOneTime = invoiceForm.periodMode === 'ONE_TIME';
@@ -520,11 +533,11 @@ export default function Payments() {
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <label className="block text-[13px] font-medium text-heading mb-1">Period From</label>
-                            <input type="date" required value={invoiceForm.periodFrom} onChange={e => setInvoiceForm({...invoiceForm, periodFrom: e.target.value})} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" />
+                            <input type="date" required min="2000-01-01" max="2099-12-31" value={invoiceForm.periodFrom} onChange={e => setInvoiceForm({...invoiceForm, periodFrom: e.target.value})} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" />
                           </div>
                           <div>
                             <label className="block text-[13px] font-medium text-heading mb-1">Period To</label>
-                            <input type="date" required value={invoiceForm.periodTo} onChange={e => setInvoiceForm({...invoiceForm, periodTo: e.target.value})} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" />
+                            <input type="date" required min="2000-01-01" max="2099-12-31" value={invoiceForm.periodTo} onChange={e => setInvoiceForm({...invoiceForm, periodTo: e.target.value})} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" />
                           </div>
                         </div>
                       )}
