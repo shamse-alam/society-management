@@ -269,17 +269,19 @@ public class PaymentService {
                 : periodFrom.plusDays(request.getDueDays());
         boolean perSqFt = "PER_SQFT".equals(request.getCalculationMode());
 
-        List<Property> properties = propertyRepository.findAll();
+        // Build a property lookup by unit number for area-based calculation
+        Map<String, Property> propertyMap = propertyRepository.findAll().stream()
+                .collect(java.util.stream.Collectors.toMap(Property::getUnitNumber, p -> p, (a, b) -> a));
+
+        // Find all users with RESIDENT role — any user who is a resident pays dues
+        List<User> residents = userRepository.findAll().stream()
+                .filter(u -> u.getRoles() != null && u.getRoles().toUpperCase().contains("RESIDENT"))
+                .toList();
+
         int generated = 0;
         int skipped = 0;
 
-        for (Property property : properties) {
-            User resident = userRepository.findFirstByUnitNumber(property.getUnitNumber()).orElse(null);
-            if (resident == null) {
-                skipped++;
-                continue;
-            }
-
+        for (User resident : residents) {
             // Check duplicates: for one-time, check if any invoice of this type exists; for periodic, check exact period
             if (oneTime) {
                 List<Payment> existing = paymentRepository.findByUserIdAndPaymentType(resident.getId(), type);
@@ -297,7 +299,9 @@ public class PaymentService {
             }
 
             BigDecimal amount;
-            if (perSqFt && request.getRatePerSqFt() != null && property.getAreaInSqFt() != null && property.getAreaInSqFt() > 0) {
+            Property property = resident.getUnitNumber() != null ? propertyMap.get(resident.getUnitNumber()) : null;
+            if (perSqFt && request.getRatePerSqFt() != null && property != null
+                    && property.getAreaInSqFt() != null && property.getAreaInSqFt() > 0) {
                 amount = request.getRatePerSqFt().multiply(BigDecimal.valueOf(property.getAreaInSqFt()));
             } else {
                 amount = request.getAmountPerUnit();
@@ -333,7 +337,7 @@ public class PaymentService {
             );
         }
 
-        return Map.of("generated", generated, "skipped", skipped, "total", properties.size());
+        return Map.of("generated", generated, "skipped", skipped, "total", residents.size());
     }
 
     public Map<String, Object> applyPenalties(PenaltyRequest request) {
