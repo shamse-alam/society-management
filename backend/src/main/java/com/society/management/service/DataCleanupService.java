@@ -50,6 +50,8 @@ public class DataCleanupService {
     private final AmenityRepository amenityRepository;
     private final EmergencyContactRepository emergencyContactRepository;
     private final UserRepository userRepository;
+    private final IncomeTypeRepository incomeTypeRepository;
+    private final ExpenseTypeRepository expenseTypeRepository;
 
     public DataCleanupService(
             VisitorParkingRepository visitorParkingRepository,
@@ -83,7 +85,9 @@ public class DataCleanupService {
             VisitorRepository visitorRepository,
             AmenityRepository amenityRepository,
             EmergencyContactRepository emergencyContactRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            IncomeTypeRepository incomeTypeRepository,
+            ExpenseTypeRepository expenseTypeRepository) {
         this.visitorParkingRepository = visitorParkingRepository;
         this.eventRsvpRepository = eventRsvpRepository;
         this.forumPostRepository = forumPostRepository;
@@ -116,6 +120,8 @@ public class DataCleanupService {
         this.amenityRepository = amenityRepository;
         this.emergencyContactRepository = emergencyContactRepository;
         this.userRepository = userRepository;
+        this.incomeTypeRepository = incomeTypeRepository;
+        this.expenseTypeRepository = expenseTypeRepository;
     }
 
     @Transactional
@@ -168,7 +174,11 @@ public class DataCleanupService {
         // Tier 7: Properties
         deleted.put("properties", deleteAll(propertyRepository));
 
-        // Tier 8: Users — keep only admin
+        // Tier 8: Config types (will be re-seeded on next restart)
+        deleted.put("incomeTypes", deleteAll(incomeTypeRepository));
+        deleted.put("expenseTypes", deleteAll(expenseTypeRepository));
+
+        // Tier 9: Users — keep only admin
         long usersBefore = userRepository.count();
         userRepository.findAll().stream()
                 .filter(u -> {
