@@ -204,6 +204,9 @@ export const adminAPI = {
   createExpenseType: (data) => api.post('/admin/expense-types', data),
   updateExpenseType: (id, data) => api.put(`/admin/expense-types/${id}`, data),
   deleteExpenseType: (id) => api.delete(`/admin/expense-types/${id}`),
+
+  // Data Cleanup
+  cleanupAllData: () => api.delete('/admin/cleanup'),
 };
 
 export const guardAPI = {

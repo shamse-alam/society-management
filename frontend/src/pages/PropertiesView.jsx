@@ -36,9 +36,11 @@ export default function PropertiesView() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-heading">{societyConfig.societyName || 'Society'} {propertyLabel}s</h1>
-        <p className="text-muted mt-1">{properties.length} {propertyLabel.toLowerCase()}s in {societyConfig.societyName || 'the society'}</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-xl font-semibold text-heading">{societyConfig.societyName || 'Society'} {propertyLabel}s</h1>
+          <p className="text-[13px] text-muted mt-0.5">{properties.length} {propertyLabel.toLowerCase()}s in {societyConfig.societyName || 'the society'}</p>
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 mb-6">

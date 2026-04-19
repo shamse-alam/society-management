@@ -67,6 +67,7 @@
 /Users/salam/Code/git/society-management/backend/src/main/java/com/society/management/repository/MoveRequestRepository.java
 /Users/salam/Code/git/society-management/backend/src/main/java/com/society/management/dto/ForumTopicRequest.java
 /Users/salam/Code/git/society-management/backend/src/main/java/com/society/management/entity/VendorType.java
+/Users/salam/Code/git/society-management/backend/src/main/java/com/society/management/service/DataCleanupService.java
 /Users/salam/Code/git/society-management/backend/src/main/java/com/society/management/dto/PollResponse.java
 /Users/salam/Code/git/society-management/backend/src/main/java/com/society/management/entity/ForumPost.java
 /Users/salam/Code/git/society-management/backend/src/main/java/com/society/management/entity/VisitStatus.java

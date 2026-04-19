@@ -3,6 +3,7 @@ import { adminAPI, userAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import { ListSkeleton } from '../components/Skeleton';
+import { ButtonSpinner } from '../components/Spinner';
 import EmptyState from '../components/EmptyState';
 import Modal from '../components/Modal';
 import { FileText, FolderOpen, Plus, Download, Trash2, Edit2, Upload, BookOpen, FileSpreadsheet, ScrollText, ClipboardList, File, Save } from 'lucide-react';
@@ -34,6 +35,7 @@ export default function Documents() {
   const [filterCat, setFilterCat] = useState('');
   const [form, setForm] = useState({ title: '', description: '', category: 'CIRCULAR' });
   const [file, setFile] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => { fetchDocs(); }, []);
 
@@ -50,6 +52,7 @@ export default function Documents() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSaving(true);
     try {
       if (editing) {
         const formData = new FormData();
@@ -74,6 +77,8 @@ export default function Documents() {
       fetchDocs();
     } catch {
       toast.error('Failed to save document');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -114,11 +119,11 @@ export default function Documents() {
   if (loading) return <ListSkeleton />;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
+    <div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-xl font-bold text-heading">Society Documents</h1>
-          <p className="text-[13px] text-muted mt-1">{docs.length} documents available</p>
+          <h1 className="text-xl font-semibold text-heading">Society Documents</h1>
+          <p className="text-[13px] text-muted mt-0.5">{docs.length} documents available</p>
         </div>
         <div className="flex items-center gap-3">
           <select value={filterCat} onChange={e => setFilterCat(e.target.value)}
@@ -127,7 +132,7 @@ export default function Documents() {
             {categories.map(c => <option key={c} value={c}>{categoryConfig[c].label}</option>)}
           </select>
           {isAdmin && (
-            <button onClick={openAdd} className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-lg text-[13px] font-medium hover:bg-indigo-700 transition-colors">
+            <button onClick={openAdd} className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded text-[13px] font-medium hover:bg-indigo-700 transition-colors">
               <Upload className="w-4 h-4" /> Upload Document
             </button>
           )}
@@ -191,10 +196,16 @@ export default function Documents() {
       {showModal && (
         <Modal open title={editing ? 'Edit Document' : 'Upload Document'} onClose={() => { setShowModal(false); setEditing(null); }} full>
           <form onSubmit={handleSubmit}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-[14px] font-semibold text-heading">Document Details</h2>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => { setShowModal(false); setEditing(null); }} className="px-4 py-2 border border-border rounded text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
+                <button type="submit" disabled={saving || !form.title || (!editing && !file)} className="px-4 py-2 bg-indigo-600 text-white rounded text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors inline-flex items-center gap-2">{saving ? <><ButtonSpinner /> Saving...</> : <><Save className="w-4 h-4" /> {editing ? 'Update Document' : 'Upload Document'}</>}</button>
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6">
               <div className="space-y-6">
                 <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-                  <h2 className="text-[14px] font-semibold text-heading mb-2">Document Details</h2>
                   <div>
                     <label className="block text-[13px] font-medium text-heading mb-1">Title *</label>
                     <input type="text" required value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
@@ -204,10 +215,6 @@ export default function Documents() {
                     <label className="block text-[13px] font-medium text-heading mb-1">Description</label>
                     <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
                       className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading resize-none" rows={2} placeholder="Brief description" />
-                  </div>
-                  <div className="flex gap-3">
-                    <button type="button" onClick={() => { setShowModal(false); setEditing(null); }} className="flex-1 py-2.5 border border-border rounded-lg text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
-                    <button type="submit" className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg text-[13px] font-medium hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"><Save className="w-4 h-4" /> {editing ? 'Update Document' : 'Upload Document'}</button>
                   </div>
                 </div>
               </div>

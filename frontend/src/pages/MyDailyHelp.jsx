@@ -141,10 +141,18 @@ export default function MyDailyHelp() {
       {/* Register Modal */}
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Register Daily Help" full>
         <form onSubmit={handleSubmit}>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-[14px] font-semibold text-heading">Helper Details</h2>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={() => setModalOpen(false)} className="px-4 py-2 border border-border rounded text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
+              <button type="submit" disabled={saving || !form.name || !form.phone} className="px-4 py-2 bg-indigo-600 text-white rounded text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors inline-flex items-center gap-2">
+                {saving ? <><ButtonSpinner /> Registering...</> : <><Save className="w-4 h-4" /> Register Helper</>}
+              </button>
+            </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6">
             <div className="space-y-6">
               <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-                <h2 className="text-[14px] font-semibold text-heading mb-2">Helper Details</h2>
                 <div>
                   <label className="block text-[13px] font-medium text-heading mb-1">Name *</label>
                   <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" required placeholder="Full name" />
@@ -171,12 +179,6 @@ export default function MyDailyHelp() {
                         }`}>{d}</button>
                     ))}
                   </div>
-                </div>
-                <div className="flex gap-3">
-                  <button type="button" onClick={() => setModalOpen(false)} className="flex-1 py-2.5 border border-border rounded-lg text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
-                  <button type="submit" disabled={saving} className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
-                    {saving ? <><ButtonSpinner /> Registering...</> : <><Save className="w-4 h-4" /> Register Helper</>}
-                  </button>
                 </div>
               </div>
             </div>

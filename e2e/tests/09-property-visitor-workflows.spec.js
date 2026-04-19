@@ -109,12 +109,9 @@ test.describe('Daily Help', () => {
 // ─────────────────────────────────────────────
 test.describe('Deliveries', () => {
   test('guard can log a delivery', async ({ guardAPI }) => {
-    // Need to find a valid unit number
-    const { data: properties } = await guardAPI.get('/guard/properties');
-    const unitNumber = properties.length > 0 ? properties[0].unitNumber : 'A-101';
-
+    // Use A-101 which is the known unit with a resident user
     const res = await guardAPI.post('/guard/deliveries', {
-      unitNumber, deliveryService: 'E2E Courier', description: 'E2E Test Package',
+      unitNumber: 'A-101', deliveryService: 'E2E Courier', description: 'E2E Test Package',
     });
     expect([200, 201]).toContain(res.status);
   });

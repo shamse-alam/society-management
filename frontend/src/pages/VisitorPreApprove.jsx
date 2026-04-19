@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { userAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import Modal from '../components/Modal';
-import { UserPlus, Copy, Clock, CheckCircle2, XCircle, LogIn, LogOut, Ban, ChevronDown, X, Bell, ShieldAlert, Check } from 'lucide-react';
+import { UserPlus, Copy, Clock, CheckCircle2, XCircle, LogIn, LogOut, Ban, ChevronDown, X, Bell, ShieldAlert, Check, Save } from 'lucide-react';
 import { useConfirm } from '../context/ConfirmContext';
 
 const fmt = (dt) => {
@@ -201,7 +201,7 @@ export default function VisitorPreApprove() {
                   </div>
                 </div>
                 <div className="flex gap-3 mt-4 pt-4 border-t border-border">
-                  <button onClick={() => handleApprove(v.id)} className="flex-1 px-4 py-2.5 bg-green-600 text-white rounded-lg text-[13px] font-semibold hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
+                  <button onClick={() => handleApprove(v.id)} className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-lg text-[13px] font-semibold hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2">
                     <Check className="w-4 h-4" /> Allow Entry
                   </button>
                   <button onClick={() => handleReject(v.id)} className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg text-[13px] font-semibold hover:bg-red-700 transition-colors flex items-center justify-center gap-2">
@@ -296,6 +296,15 @@ export default function VisitorPreApprove() {
       {/* Pre-approve modal */}
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Pre-Approve Visitor">
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-[14px] font-semibold text-heading">Visitor Details</h2>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={() => setModalOpen(false)} className="px-4 py-2 border border-border rounded text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
+              <button type="submit" disabled={saving || !form.visitorName || !form.visitorPhone || !form.expectedAt} className="px-4 py-2 bg-indigo-600 text-white rounded text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors inline-flex items-center gap-2">
+                {saving ? <><ButtonSpinner /> Approving...</> : <><Save className="w-4 h-4" /> Pre-Approve & Get Passcode</>}
+              </button>
+            </div>
+          </div>
           <div>
             <label className="block text-[13px] font-medium text-sub mb-1">Visitor Name *</label>
             <input type="text" value={form.visitorName} onChange={(e) => setForm({ ...form, visitorName: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded focus:ring-2 focus:ring-indigo-500 outline-none text-[13px] text-heading" required placeholder="Full name" />
@@ -328,12 +337,6 @@ export default function VisitorPreApprove() {
           <div>
             <label className="block text-[13px] font-medium text-sub mb-1">Purpose</label>
             <input type="text" value={form.purpose} onChange={(e) => setForm({ ...form, purpose: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded focus:ring-2 focus:ring-indigo-500 outline-none text-[13px] text-heading" placeholder="Purpose of visit" />
-          </div>
-          <div className="flex gap-3 pt-4">
-            <button type="button" onClick={() => setModalOpen(false)} className="flex-1 py-2.5 border border-border rounded-lg text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
-            <button type="submit" disabled={saving} className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors">
-              {saving ? <><ButtonSpinner /> Approving...</> : 'Pre-Approve & Get Passcode'}
-            </button>
           </div>
         </form>
       </Modal>

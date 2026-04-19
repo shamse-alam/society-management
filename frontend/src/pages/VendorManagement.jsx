@@ -6,6 +6,7 @@ import { adminAPI } from '../services/api';
 import Modal from '../components/Modal';
 import { Plus, Pencil, Trash2, Search, Upload, Store, Landmark, Save } from 'lucide-react';
 import { useConfirm } from '../context/ConfirmContext';
+import { useToast } from '../components/Toast';
 import { useSocietyConfig } from '../context/SocietyConfigContext';
 import { getTypeColor } from '../utils/typeColors';
 import { useNavigate } from 'react-router-dom';
@@ -23,6 +24,7 @@ function VendorAvatar({ name, src }) {
 
 export default function VendorManagement() {
   const confirm = useConfirm();
+  const toast = useToast();
   const { expenseTypes } = useSocietyConfig();
   const VENDOR_CATEGORIES = expenseTypes.map(t => t.code);
   const [vendors, setVendors] = useState([]);
@@ -51,7 +53,7 @@ export default function VendorManagement() {
 
   const openAddModal = () => {
     setEditId(null);
-    setForm({ name: '', category: '', phone: '', email: '', address: '', active: true, vendorType: 'OTHER', monthlyAmount: '', contractStartDate: '', contractEndDate: '', gstNumber: '', bankAccounts: [] });
+    setForm({ name: '', category: VENDOR_CATEGORIES[0] || '', phone: '', email: '', address: '', active: true, vendorType: 'OTHER', monthlyAmount: '', contractStartDate: '', contractEndDate: '', gstNumber: '', bankAccounts: [] });
     setLogoFile(null); setLogoPreview(null);
     setError(''); setModalOpen(true);
   };
@@ -87,14 +89,15 @@ export default function VendorManagement() {
         await adminAPI.uploadVendorLogo(vendorId, logoFile);
       }
       setModalOpen(false); fetchVendors();
+      toast.success(editId ? 'Vendor updated successfully' : 'Vendor created successfully');
     } catch (err) { setError(err.response?.data?.message || 'Failed to save vendor'); }
     finally { setSaving(false); }
   };
 
   const handleDelete = async (id) => {
     if (!await confirm({ title: 'Delete Vendor', message: 'Are you sure you want to delete this vendor? This action cannot be undone.', confirmLabel: 'Delete', danger: true })) return;
-    try { await adminAPI.deleteVendor(id); fetchVendors(); }
-    catch { alert('Failed to delete vendor'); }
+    try { await adminAPI.deleteVendor(id); fetchVendors(); toast.success('Vendor deleted'); }
+    catch { toast.error('Failed to delete vendor'); }
   };
 
   const filtered = vendors.filter(v => {
@@ -223,12 +226,19 @@ export default function VendorManagement() {
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editId ? 'Edit Vendor' : 'Add Vendor'} full>
         {error && <div className="mb-4 p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 rounded-lg text-[13px]">{error}</div>}
         <form onSubmit={handleSubmit}>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-[14px] font-semibold text-heading">Vendor Details</h2>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={() => setModalOpen(false)} className="px-4 py-2 border border-border rounded text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
+              <button type="submit" disabled={saving || !form.name || !form.category} className="px-4 py-2 bg-indigo-600 text-white rounded text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors inline-flex items-center gap-2">
+                {saving ? <><ButtonSpinner /> Saving...</> : <><Save className="w-4 h-4" /> {editId ? 'Update Vendor' : 'Save Vendor'}</>}
+              </button>
+            </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6">
             {/* Left Column — Vendor Details */}
             <div className="space-y-6">
               <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-                <h2 className="text-[14px] font-semibold text-heading mb-2">Vendor Details</h2>
-
                 <div>
                   <label className="block text-[13px] font-medium text-heading mb-1">Vendor Name *</label>
                   <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" required placeholder="e.g. Green Gardens Pvt Ltd" />
@@ -298,16 +308,6 @@ export default function VendorManagement() {
                   </div>
                 )}
 
-                <div className="flex gap-3">
-                  <button type="button" onClick={() => setModalOpen(false)}
-                    className="flex-1 py-2.5 border border-border rounded-lg text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">
-                    Cancel
-                  </button>
-                  <button type="submit" disabled={saving}
-                    className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg text-[13px] font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
-                    {saving ? <><ButtonSpinner /> Saving...</> : <><Save className="w-4 h-4" /> {editId ? 'Update Vendor' : 'Save Vendor'}</>}
-                  </button>
-                </div>
               </div>
             </div>
 

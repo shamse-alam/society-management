@@ -181,10 +181,18 @@ export default function Polls() {
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Create Poll" full>
         {error && <div className="mb-4 p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 rounded-lg text-[13px]">{error}</div>}
         <form onSubmit={handleSubmit}>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-[14px] font-semibold text-heading">Poll Details</h2>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={() => setModalOpen(false)} className="px-4 py-2 border border-border rounded text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
+              <button type="submit" disabled={saving || !form.question || form.options.filter(o => o.trim()).length < 2} className="px-4 py-2 bg-indigo-600 text-white rounded text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors inline-flex items-center gap-2">
+                {saving ? <><ButtonSpinner /> Creating...</> : <><Save className="w-4 h-4" /> Create Poll</>}
+              </button>
+            </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6">
             <div className="space-y-6">
               <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-                <h2 className="text-[14px] font-semibold text-heading mb-2">Poll Details</h2>
                 <div>
                   <label className="block text-[13px] font-medium text-heading mb-1">Question *</label>
                   <input type="text" value={form.question} onChange={(e) => setForm({ ...form, question: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" required placeholder="What do you want to ask?" />
@@ -206,12 +214,6 @@ export default function Polls() {
                     ))}
                   </div>
                   <button type="button" onClick={addOption} className="mt-2 text-[12px] text-indigo-600 dark:text-indigo-400 font-medium hover:underline">+ Add option</button>
-                </div>
-                <div className="flex gap-3">
-                  <button type="button" onClick={() => setModalOpen(false)} className="flex-1 py-2.5 border border-border rounded-lg text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
-                  <button type="submit" disabled={saving} className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
-                    {saving ? <><ButtonSpinner /> Creating...</> : <><Save className="w-4 h-4" /> Create Poll</>}
-                  </button>
                 </div>
               </div>
             </div>

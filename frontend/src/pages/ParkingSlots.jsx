@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { adminAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { TableSkeleton } from '../components/Skeleton';
+import { ButtonSpinner } from '../components/Spinner';
 import EmptyState from '../components/EmptyState';
 import Modal from '../components/Modal';
 import { ParkingSquare, Plus, Edit2, Trash2, Car, Bike, Zap, UserCheck, Save } from 'lucide-react';
@@ -27,6 +28,7 @@ export default function ParkingSlots() {
   const [editing, setEditing] = useState(null);
   const [filterType, setFilterType] = useState('');
   const [form, setForm] = useState({ slotNumber: '', slotType: 'CAR', zone: '', assignedUnitNumber: '', assignedVehicleId: '' });
+  const [saving, setSaving] = useState(false);
   const [properties, setProperties] = useState([]);
 
   useEffect(() => { fetchSlots(); fetchProperties(); }, []);
@@ -48,6 +50,7 @@ export default function ParkingSlots() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSaving(true);
     const payload = { ...form, assignedVehicleId: form.assignedVehicleId ? Number(form.assignedVehicleId) : null };
     try {
       if (editing) {
@@ -62,6 +65,8 @@ export default function ParkingSlots() {
       fetchSlots();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to save slot');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -96,11 +101,11 @@ export default function ParkingSlots() {
   if (loading) return <TableSkeleton />;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
+    <div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-xl font-bold text-heading">Parking Slots</h1>
-          <p className="text-[13px] text-muted mt-1">{slots.length} total slots &middot; {occupiedCount} occupied &middot; {freeCount} free</p>
+          <h1 className="text-xl font-semibold text-heading">Parking Slots</h1>
+          <p className="text-[13px] text-muted mt-0.5">{slots.length} total slots &middot; {occupiedCount} occupied &middot; {freeCount} free</p>
         </div>
         <div className="flex items-center gap-3">
           <select value={filterType} onChange={e => setFilterType(e.target.value)}
@@ -108,7 +113,7 @@ export default function ParkingSlots() {
             <option value="">All Types</option>
             {slotTypes.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
-          <button onClick={openAdd} className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-lg text-[13px] font-medium hover:bg-indigo-700 transition-colors">
+          <button onClick={openAdd} className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded text-[13px] font-medium hover:bg-indigo-700 transition-colors">
             <Plus className="w-4 h-4" /> Add Slot
           </button>
         </div>
@@ -184,10 +189,16 @@ export default function ParkingSlots() {
       {showModal && (
         <Modal open title={editing ? 'Edit Parking Slot' : 'Add Parking Slot'} onClose={() => { setShowModal(false); setEditing(null); }} full>
           <form onSubmit={handleSubmit}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-[14px] font-semibold text-heading">Slot Details</h2>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => { setShowModal(false); setEditing(null); }} className="px-4 py-2 border border-border rounded text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
+                <button type="submit" disabled={saving || !form.slotNumber} className="px-4 py-2 bg-indigo-600 text-white rounded text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors inline-flex items-center gap-2">{saving ? <ButtonSpinner /> : <Save className="w-4 h-4" />} {saving ? 'Saving...' : (editing ? 'Update Slot' : 'Create Slot')}</button>
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6">
               <div className="space-y-6">
                 <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-                  <h2 className="text-[14px] font-semibold text-heading mb-2">Slot Details</h2>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[13px] font-medium text-heading mb-1">Slot Number *</label>
@@ -199,10 +210,6 @@ export default function ParkingSlots() {
                       <input type="text" value={form.zone} onChange={e => setForm({ ...form, zone: e.target.value })}
                         className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" placeholder="Block A" />
                     </div>
-                  </div>
-                  <div className="flex gap-3">
-                    <button type="button" onClick={() => { setShowModal(false); setEditing(null); }} className="flex-1 py-2.5 border border-border rounded-lg text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
-                    <button type="submit" className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"><Save className="w-4 h-4" /> {editing ? 'Update Slot' : 'Create Slot'}</button>
                   </div>
                 </div>
               </div>

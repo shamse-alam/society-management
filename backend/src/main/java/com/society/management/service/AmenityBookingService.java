@@ -172,6 +172,28 @@ public class AmenityBookingService {
         return BookingResponse.from(booking);
     }
 
+    @Transactional
+    public BookingResponse cancelMyBooking(Long bookingId, String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        AmenityBooking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        if (!booking.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("You can only cancel your own bookings");
+        }
+        if (booking.getStatus() == BookingStatus.CANCELLED) {
+            throw new RuntimeException("Booking is already cancelled");
+        }
+
+        booking.setStatus(BookingStatus.CANCELLED);
+        booking = bookingRepository.save(booking);
+
+        paymentRepository.findByBookingId(bookingId).ifPresent(paymentRepository::delete);
+
+        return BookingResponse.from(booking);
+    }
+
     public List<BookingResponse> getAllBookings() {
         return bookingRepository.findAllByOrderByCreatedAtDesc().stream()
                 .map(this::toResponseWithPayment).collect(Collectors.toList());

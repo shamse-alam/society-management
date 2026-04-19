@@ -327,42 +327,60 @@ export default function FundReleases() {
       </div>
 
       {/* Create Release Request Modal */}
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Request Fund Release">
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Request Fund Release" full>
         {error && <div className="mb-4 p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 rounded-lg text-[13px]">{error}</div>}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-[13px] font-medium text-heading mb-1">Fund Type *</label>
-            <select value={form.fundType} onChange={(e) => setForm({ ...form, fundType: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading">
-              {incomeTypes.filter(t => t.reserveFund).map(t => (
-                <option key={t.code} value={t.code}>{t.displayName} Fund</option>
-              ))}
-            </select>
+        <form onSubmit={handleSubmit}>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-[14px] font-semibold text-heading">Release Details</h2>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={() => setModalOpen(false)} className="px-4 py-2 border border-border rounded text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
+              <button type="submit" disabled={saving || !form.fundType || !form.amount || !form.reason} className="px-4 py-2 bg-indigo-600 text-white rounded text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors inline-flex items-center gap-2">
+                {saving ? <><ButtonSpinner /> Submitting...</> : <><Save className="w-4 h-4" /> Submit Request</>}
+              </button>
+            </div>
           </div>
-          <div>
-            <label className="block text-[13px] font-medium text-heading mb-1">Amount *</label>
-            <input type="number" min="1" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" required placeholder="Enter amount to release" />
-          </div>
-          <div>
-            <label className="block text-[13px] font-medium text-heading mb-1">Reason *</label>
-            <textarea rows={3} value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading resize-none" required placeholder="Justification for releasing these funds" />
-          </div>
-          <div>
-            <label className="block text-[13px] font-medium text-heading mb-1">Notes</label>
-            <textarea rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading resize-none" placeholder="Additional notes (optional)" />
-          </div>
-
-          <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-lg p-3">
-            <p className="text-[12px] text-amber-700 dark:text-amber-400">
-              <Lock className="w-3.5 h-3.5 inline mr-1" />
-              Reserve funds are locked by default. This request will need approval from an authorized committee member before the funds can be used.
-            </p>
-          </div>
-
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={() => setModalOpen(false)} className="flex-1 py-2.5 border border-border rounded-lg text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
-            <button type="submit" disabled={saving} className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
-              {saving ? <><ButtonSpinner /> Submitting...</> : <><Save className="w-4 h-4" /> Submit Request</>}
-            </button>
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6">
+            <div className="space-y-6">
+              <div className="bg-card border border-border rounded-xl p-6 space-y-4">
+                <div>
+                  <label className="block text-[13px] font-medium text-heading mb-1">Fund Type *</label>
+                  <select value={form.fundType} onChange={(e) => setForm({ ...form, fundType: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading">
+                    {incomeTypes.filter(t => t.reserveFund).map(t => (
+                      <option key={t.code} value={t.code}>{t.displayName} Fund</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[13px] font-medium text-heading mb-1">Amount *</label>
+                  <input type="number" min="1" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" required placeholder="Enter amount to release" />
+                </div>
+                <div>
+                  <label className="block text-[13px] font-medium text-heading mb-1">Reason *</label>
+                  <textarea rows={3} value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading resize-none" required placeholder="Justification for releasing these funds" />
+                </div>
+                <div>
+                  <label className="block text-[13px] font-medium text-heading mb-1">Notes</label>
+                  <textarea rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading resize-none" placeholder="Additional notes (optional)" />
+                </div>
+              </div>
+            </div>
+            <div className="space-y-6 md:sticky md:top-4 md:self-start">
+              <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-xl p-5">
+                <h2 className="text-[14px] font-semibold text-amber-800 dark:text-amber-400 mb-2 flex items-center gap-2"><Lock className="w-4 h-4" /> Important</h2>
+                <p className="text-[12px] text-amber-700 dark:text-amber-400">
+                  Reserve funds are locked by default. This request will need approval from an authorized committee member before the funds can be used.
+                </p>
+              </div>
+              <div className="bg-card border border-border rounded-xl p-5">
+                <h2 className="text-[14px] font-semibold text-heading mb-1">Workflow</h2>
+                <p className="text-[11px] text-muted mb-3">Fund release approval flow:</p>
+                <div className="flex items-center gap-1 text-[11px] text-muted">
+                  <span className="px-2 py-0.5 bg-yellow-100 dark:bg-yellow-500/15 rounded text-yellow-700 dark:text-yellow-400">Pending</span>
+                  <span>→</span>
+                  <span className="px-2 py-0.5 bg-green-100 dark:bg-green-500/15 rounded text-green-700 dark:text-green-400">Approved</span>
+                </div>
+              </div>
+            </div>
           </div>
         </form>
       </Modal>
@@ -370,15 +388,18 @@ export default function FundReleases() {
       {/* Reject Modal */}
       <Modal open={rejectModalOpen} onClose={() => setRejectModalOpen(false)} title="Reject Fund Release">
         <div className="space-y-4">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-[14px] font-semibold text-heading">Rejection Details</h2>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={() => setRejectModalOpen(false)} className="px-4 py-2 border border-border rounded text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
+              <button onClick={handleReject} disabled={saving || !rejectReason.trim()} className="px-4 py-2 bg-red-600 text-white rounded text-[13px] font-medium hover:bg-red-700 disabled:opacity-50 transition-colors inline-flex items-center gap-2">
+                {saving ? <><ButtonSpinner /> Rejecting...</> : <><XCircle className="w-4 h-4" /> Reject</>}
+              </button>
+            </div>
+          </div>
           <div>
             <label className="block text-[13px] font-medium text-heading mb-1">Rejection Reason *</label>
             <textarea rows={3} value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading resize-none" required placeholder="Provide a reason for rejection" />
-          </div>
-          <div className="flex gap-3">
-            <button type="button" onClick={() => setRejectModalOpen(false)} className="flex-1 py-2.5 border border-border rounded-lg text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
-            <button onClick={handleReject} disabled={saving || !rejectReason.trim()} className="flex-1 py-2.5 bg-red-600 text-white rounded-lg text-[13px] font-medium hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
-              {saving ? <><ButtonSpinner /> Rejecting...</> : <><XCircle className="w-4 h-4" /> Reject</>}
-            </button>
           </div>
         </div>
       </Modal>

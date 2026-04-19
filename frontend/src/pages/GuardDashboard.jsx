@@ -208,7 +208,7 @@ export default function GuardDashboard() {
             <p className="text-[13px] text-muted mt-0.5">Visitor management & gate control</p>
           </div>
         </div>
-        <button onClick={() => setWalkInOpen(true)} className="inline-flex items-center gap-2 bg-amber-600 text-white px-4 py-2 rounded text-[13px] font-medium hover:bg-amber-700 transition-colors">
+        <button onClick={() => setWalkInOpen(true)} className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded text-[13px] font-medium hover:bg-indigo-700 transition-colors">
           <Bell className="w-4 h-4" /> Walk-in Approval
         </button>
       </div>
@@ -244,7 +244,7 @@ export default function GuardDashboard() {
                 <p className="text-[12px] text-muted mt-1">Expected: {fmt(verifiedVisitor.expectedAt)}</p>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => handleCheckIn(verifiedVisitor)} className="px-4 py-2 bg-green-600 text-white rounded text-[13px] font-medium hover:bg-green-700 transition-colors flex items-center gap-1.5">
+                <button onClick={() => handleCheckIn(verifiedVisitor)} className="px-4 py-2 bg-indigo-600 text-white rounded text-[13px] font-medium hover:bg-indigo-700 transition-colors flex items-center gap-1.5">
                   <LogIn className="w-3.5 h-3.5" /> Allow Entry
                 </button>
                 <button onClick={() => handleDeny(verifiedVisitor.id)} className="px-4 py-2 bg-red-600 text-white rounded text-[13px] font-medium hover:bg-red-700 transition-colors flex items-center gap-1.5">
@@ -357,7 +357,7 @@ export default function GuardDashboard() {
                 </div>
               </div>
               <div className="flex gap-2 mt-3 pt-3 border-t border-border">
-                <button onClick={() => handleCheckIn(v)} className="px-3 py-1.5 bg-green-600 text-white rounded text-[12px] font-medium hover:bg-green-700 flex items-center gap-1">
+                <button onClick={() => handleCheckIn(v)} className="px-3 py-1.5 bg-indigo-600 text-white rounded text-[12px] font-medium hover:bg-indigo-700 flex items-center gap-1">
                   <LogIn className="w-3.5 h-3.5" /> Check In
                 </button>
                 <button onClick={() => handleDeny(v.id)} className="px-3 py-1.5 border border-red-300 dark:border-red-500/30 text-red-600 dark:text-red-400 rounded text-[12px] font-medium hover:bg-red-50 dark:hover:bg-red-500/10 flex items-center gap-1">
@@ -392,7 +392,7 @@ export default function GuardDashboard() {
                 </div>
               </div>
               <div className="flex gap-2 mt-3 pt-3 border-t border-border">
-                <button onClick={() => handleCheckOut(v.id)} className="px-3 py-1.5 bg-gray-600 text-white rounded text-[12px] font-medium hover:bg-gray-700 flex items-center gap-1">
+                <button onClick={() => handleCheckOut(v.id)} className="px-3 py-1.5 bg-indigo-600 text-white rounded text-[12px] font-medium hover:bg-indigo-700 flex items-center gap-1">
                   <LogOut className="w-3.5 h-3.5" /> Check Out
                 </button>
               </div>
@@ -423,7 +423,7 @@ export default function GuardDashboard() {
                 </div>
               </div>
               <div className="flex gap-2 mt-3 pt-3 border-t border-border">
-                <button onClick={() => handleDailyHelpCheckIn(dh.id)} className="px-3 py-1.5 bg-green-600 text-white rounded text-[12px] font-medium hover:bg-green-700 flex items-center gap-1">
+                <button onClick={() => handleDailyHelpCheckIn(dh.id)} className="px-3 py-1.5 bg-indigo-600 text-white rounded text-[12px] font-medium hover:bg-indigo-700 flex items-center gap-1">
                   <UserCheck className="w-3.5 h-3.5" /> Mark Present
                 </button>
               </div>
@@ -434,7 +434,7 @@ export default function GuardDashboard() {
         {tab === 'deliveries' && (
           <>
             <div className="flex justify-end mb-2">
-              <button onClick={() => setDeliveryOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-600 text-white rounded text-[12px] font-medium hover:bg-orange-700 transition-colors">
+              <button onClick={() => setDeliveryOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded text-[12px] font-medium hover:bg-indigo-700 transition-colors">
                 <Truck className="w-3.5 h-3.5" /> Log Delivery
               </button>
             </div>
@@ -457,7 +457,7 @@ export default function GuardDashboard() {
                   <p className="text-[11px] text-muted shrink-0">{fmt(dl.createdAt)}</p>
                 </div>
                 <div className="flex gap-2 mt-3 pt-3 border-t border-border">
-                  <button onClick={() => { setPickupId(dl.id); setPickupOpen(true); }} className="px-3 py-1.5 bg-green-600 text-white rounded text-[12px] font-medium hover:bg-green-700 flex items-center gap-1">
+                  <button onClick={() => { setPickupId(dl.id); setPickupOpen(true); }} className="px-3 py-1.5 bg-indigo-600 text-white rounded text-[12px] font-medium hover:bg-indigo-700 flex items-center gap-1">
                     <Package className="w-3.5 h-3.5" /> Mark Picked Up
                   </button>
                 </div>
@@ -470,10 +470,18 @@ export default function GuardDashboard() {
       {/* Walk-in Modal */}
       <Modal open={walkInOpen} onClose={() => setWalkInOpen(false)} title="Request Resident Approval" full>
         <form onSubmit={handleWalkIn}>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-[14px] font-semibold text-heading">Visitor Details</h2>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={() => setWalkInOpen(false)} className="px-4 py-2 border border-border rounded text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
+              <button type="submit" disabled={walkInSaving || !walkInForm.visitorName || !walkInForm.visitorPhone || !walkInForm.unitNumber} className="px-4 py-2 bg-indigo-600 text-white rounded text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors inline-flex items-center gap-2">
+                {walkInSaving ? <><ButtonSpinner /> Sending...</> : <><Save className="w-4 h-4" /> Request Approval</>}
+              </button>
+            </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6">
             <div className="space-y-6">
               <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-                <h2 className="text-[14px] font-semibold text-heading mb-2">Visitor Details</h2>
                 <div>
                   <label className="block text-[13px] font-medium text-heading mb-1">Visitor Name *</label>
                   <input type="text" value={walkInForm.visitorName} onChange={(e) => setWalkInForm({ ...walkInForm, visitorName: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" required />
@@ -491,12 +499,6 @@ export default function GuardDashboard() {
                 <div>
                   <label className="block text-[13px] font-medium text-heading mb-1">Purpose</label>
                   <input type="text" value={walkInForm.purpose} onChange={(e) => setWalkInForm({ ...walkInForm, purpose: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" />
-                </div>
-                <div className="flex gap-3">
-                  <button type="button" onClick={() => setWalkInOpen(false)} className="flex-1 py-2.5 border border-border rounded-lg text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
-                  <button type="submit" disabled={walkInSaving} className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
-                    {walkInSaving ? <><ButtonSpinner /> Sending...</> : <><Save className="w-4 h-4" /> Request Approval</>}
-                  </button>
                 </div>
               </div>
             </div>
@@ -529,19 +531,21 @@ export default function GuardDashboard() {
       {/* Delivery Modal */}
       <Modal open={deliveryOpen} onClose={() => setDeliveryOpen(false)} title="Log Delivery" full>
         <form onSubmit={handleLogDelivery}>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-[14px] font-semibold text-heading">Delivery Details</h2>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={() => setDeliveryOpen(false)} className="px-4 py-2 border border-border rounded text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
+              <button type="submit" disabled={deliverySaving || !deliveryForm.unitNumber || !deliveryForm.deliveryService} className="px-4 py-2 bg-indigo-600 text-white rounded text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors inline-flex items-center gap-2">
+                {deliverySaving ? <><ButtonSpinner /> Logging...</> : <><Save className="w-4 h-4" /> Log Delivery</>}
+              </button>
+            </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6">
             <div className="space-y-6">
               <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-                <h2 className="text-[14px] font-semibold text-heading mb-2">Delivery Details</h2>
                 <div>
                   <label className="block text-[13px] font-medium text-heading mb-1">Description</label>
                   <input type="text" value={deliveryForm.description} onChange={(e) => setDeliveryForm({ ...deliveryForm, description: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" placeholder="Package details (optional)" />
-                </div>
-                <div className="flex gap-3">
-                  <button type="button" onClick={() => setDeliveryOpen(false)} className="flex-1 py-2.5 border border-border rounded-lg text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
-                  <button type="submit" disabled={deliverySaving} className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
-                    {deliverySaving ? <><ButtonSpinner /> Logging...</> : <><Save className="w-4 h-4" /> Log Delivery</>}
-                  </button>
                 </div>
               </div>
             </div>
@@ -579,19 +583,19 @@ export default function GuardDashboard() {
 
       {/* Pickup Modal */}
       <Modal open={pickupOpen} onClose={() => { setPickupOpen(false); setPickupId(null); setReceivedBy(''); }} title="Mark Delivery Picked Up" full>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-[14px] font-semibold text-heading">Pickup Details</h2>
+          <div className="flex items-center gap-2">
+            <button onClick={() => { setPickupOpen(false); setPickupId(null); setReceivedBy(''); }} className="px-4 py-2 border border-border rounded text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
+            <button onClick={handlePickUp} disabled={!receivedBy} className="px-4 py-2 bg-indigo-600 text-white rounded text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors inline-flex items-center gap-2"><Save className="w-4 h-4" /> Confirm Pickup</button>
+          </div>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6">
           <div className="space-y-6">
             <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-              <h2 className="text-[14px] font-semibold text-heading mb-2">Pickup Details</h2>
               <div>
                 <label className="block text-[13px] font-medium text-heading mb-1">Received By *</label>
                 <input type="text" value={receivedBy} onChange={(e) => setReceivedBy(e.target.value)} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" placeholder="Name of person who picked up" />
-              </div>
-              <div className="flex gap-3">
-                <button onClick={() => { setPickupOpen(false); setPickupId(null); setReceivedBy(''); }} className="flex-1 py-2.5 border border-border rounded-lg text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
-                <button onClick={handlePickUp} className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg text-[13px] font-medium hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2">
-                  <Save className="w-4 h-4" /> Confirm Pickup
-                </button>
               </div>
             </div>
           </div>

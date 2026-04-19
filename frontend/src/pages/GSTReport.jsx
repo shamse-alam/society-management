@@ -176,7 +176,7 @@ export default function GSTReport() {
         </div>
         {data && (
           <div className="flex gap-2">
-            <button onClick={exportPDF} className="inline-flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded text-[13px] font-medium hover:bg-red-600 transition-colors"><FileDown className="w-4 h-4" /> PDF</button>
+            <button onClick={exportPDF} className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded text-[13px] font-medium hover:bg-red-700 transition-colors"><FileDown className="w-4 h-4" /> PDF</button>
             <button onClick={exportExcel} className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded text-[13px] font-medium hover:bg-green-700 transition-colors"><FileSpreadsheet className="w-4 h-4" /> Excel</button>
           </div>
         )}
@@ -185,7 +185,7 @@ export default function GSTReport() {
       <div className="flex flex-wrap items-end gap-3 mb-6">
         <div><label className="block text-[10px] font-medium text-muted mb-1">From</label><input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="px-3 py-1.5 bg-input-bg border border-input-border rounded text-[13px] text-heading focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" /></div>
         <div><label className="block text-[10px] font-medium text-muted mb-1">To</label><input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="px-3 py-1.5 bg-input-bg border border-input-border rounded text-[13px] text-heading focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" /></div>
-        <button onClick={handleFilter} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded text-[13px] font-medium hover:bg-indigo-700 transition-colors"><Filter className="w-3.5 h-3.5" /> Generate</button>
+        <button onClick={handleFilter} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 text-white rounded text-[13px] font-medium hover:bg-amber-700 transition-colors"><Filter className="w-3.5 h-3.5" /> Generate</button>
       </div>
 
       {loading ? <TableSkeleton /> : data && (

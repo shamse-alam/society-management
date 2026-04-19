@@ -60,4 +60,10 @@ public class PaymentController {
         return ResponseEntity.ok(bookingService.getMyBookings(userDetails.getUsername()));
     }
 
+    @PutMapping("/bookings/{id}/cancel")
+    public ResponseEntity<BookingResponse> cancelMyBooking(@AuthenticationPrincipal UserDetails userDetails,
+                                                            @PathVariable Long id) {
+        return ResponseEntity.ok(bookingService.cancelMyBooking(id, userDetails.getUsername()));
+    }
+
 }

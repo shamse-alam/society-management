@@ -215,6 +215,7 @@ export default function Payments() {
 
   const handleGenerateInvoices = async (e) => {
     e.preventDefault();
+    setSaving(true);
     try {
       const isOneTime = invoiceForm.periodMode === 'ONE_TIME';
       const calcMode = invoiceForm.calculationMode === 'PER_SQFT' ? 'PER_SQFT' : 'LUMPSUM';
@@ -241,16 +242,19 @@ export default function Payments() {
       setRegisterOpen(true);
       fetchData();
     } catch (err) { toast.error(err.response?.data?.message || 'Failed to generate invoices'); }
+    finally { setSaving(false); }
   };
 
   const handleApplyPenalties = async (e) => {
     e.preventDefault();
+    setSaving(true);
     try {
       const res = await adminAPI.applyPenalties({ annualRate: Number(penaltyForm.annualRate) });
       toast.success(`Applied penalties to ${res.data.applied} payments`);
       setPenaltyModal(false);
       fetchData();
     } catch (err) { toast.error('Failed to apply penalties'); }
+    finally { setSaving(false); }
   };
 
   const generateReceiptPDF = (p) => {
@@ -329,7 +333,7 @@ export default function Payments() {
           <button onClick={exportExcel} className="btn-outline inline-flex items-center gap-1.5 px-3 py-2 border border-border rounded text-[13px] font-medium text-sub hover:bg-card-hover transition-colors" title="Export Excel"><Download className="w-3.5 h-3.5" /> Excel</button>
           <button onClick={() => setInvoiceModal(true)} className="btn-outline inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 text-white rounded text-[13px] font-medium hover:bg-amber-700 transition-colors"><FileText className="w-3.5 h-3.5" /> Generate Invoices</button>
           <button onClick={() => setPenaltyModal(true)} className="btn-outline inline-flex items-center gap-1.5 px-3 py-2 bg-red-600 text-white rounded text-[13px] font-medium hover:bg-red-700 transition-colors"><AlertTriangle className="w-3.5 h-3.5" /> Late Fees</button>
-          <button onClick={openReceiptModal} className="btn-primary inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded text-[13px] font-medium hover:bg-indigo-700 transition-colors">
+          <button onClick={openReceiptModal} className="btn-primary inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded text-[13px] font-medium hover:bg-green-700 transition-colors">
             <Plus className="w-4 h-4" /> Record Receipt
           </button>
         </div>
@@ -478,10 +482,16 @@ export default function Payments() {
       {invoiceModal && (
         <Modal open title="Generate Invoices" onClose={() => setInvoiceModal(false)} full>
           <form onSubmit={handleGenerateInvoices}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-[14px] font-semibold text-heading">Invoice Details</h2>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => setInvoiceModal(false)} className="px-4 py-2 border border-border rounded text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
+                <button type="submit" disabled={saving} className="px-4 py-2 bg-amber-600 text-white rounded text-[13px] font-medium hover:bg-amber-700 disabled:opacity-50 transition-colors inline-flex items-center gap-2">{saving ? <><ButtonSpinner /> Generating...</> : <><Save className="w-4 h-4" /> Generate Invoices</>}</button>
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6">
               <div className="space-y-6">
                 <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-                  <h2 className="text-[14px] font-semibold text-heading mb-2">Invoice Details</h2>
                   {invoiceForm.periodMode !== 'ONE_TIME' && (
                     <>
                       <div>
@@ -540,12 +550,6 @@ export default function Payments() {
                       <input type="number" min="1" value={invoiceForm.dueDays} onChange={e => setInvoiceForm({...invoiceForm, dueDays: Number(e.target.value)})} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" />
                     </div>
                   )}
-                  <div className="flex gap-3">
-                    <button type="button" onClick={() => setInvoiceModal(false)} className="flex-1 py-2.5 border border-border rounded-lg text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
-                    <button type="submit" className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg text-[13px] font-medium hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2">
-                      <Save className="w-4 h-4" /> Generate Invoices
-                    </button>
-                  </div>
                 </div>
               </div>
               <div className="space-y-6 md:sticky md:top-4 md:self-start">
@@ -569,20 +573,20 @@ export default function Payments() {
       {penaltyModal && (
         <Modal open title="Apply Late Fees" onClose={() => setPenaltyModal(false)} full>
           <form onSubmit={handleApplyPenalties}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-[14px] font-semibold text-heading">Late Fee Configuration</h2>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => setPenaltyModal(false)} className="px-4 py-2 border border-border rounded text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
+                <button type="submit" disabled={saving || !penaltyForm.annualRate} className="px-4 py-2 bg-red-600 text-white rounded text-[13px] font-medium hover:bg-red-700 disabled:opacity-50 transition-colors inline-flex items-center gap-2">{saving ? <><ButtonSpinner /> Applying...</> : <><Save className="w-4 h-4" /> Apply Late Fees</>}</button>
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6">
               <div className="space-y-6">
                 <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-                  <h2 className="text-[14px] font-semibold text-heading mb-2">Late Fee Configuration</h2>
                   <p className="text-[13px] text-muted">Applies an annual interest-based late fee to all overdue PENDING payments.<InfoTooltip text="Penalty is calculated proportionally based on the number of days overdue. Formula: Amount × Annual Rate × Days Overdue ÷ 365" /></p>
                   <div>
                     <label className="block text-[13px] font-medium text-heading mb-1">Annual Interest Rate (%)<InfoTooltip text={`e.g. 18% p.a. on ₹5,000 overdue by 30 days = ₹${(5000 * (Number(penaltyForm.annualRate) || 0) * 30 / 36500).toFixed(0)} penalty`} /></label>
                     <input type="number" min="0.01" step="0.01" required value={penaltyForm.annualRate} onChange={e => setPenaltyForm({...penaltyForm, annualRate: e.target.value})} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" placeholder="e.g. 18" />
-                  </div>
-                  <div className="flex gap-3">
-                    <button type="button" onClick={() => setPenaltyModal(false)} className="flex-1 py-2.5 border border-border rounded-lg text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
-                    <button type="submit" className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg text-[13px] font-medium hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2">
-                      <Save className="w-4 h-4" /> Apply Late Fees
-                    </button>
                   </div>
                 </div>
               </div>
@@ -596,10 +600,18 @@ export default function Payments() {
       <Modal open={receiptModal} onClose={() => setReceiptModal(false)} title="Record Receipt" full>
         {error && <div className="mb-4 p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 rounded text-[13px]">{error}</div>}
         <form onSubmit={handleRecordReceipt}>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-[14px] font-semibold text-heading">Receipt Details</h2>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={() => setReceiptModal(false)} className="px-4 py-2 border border-border rounded text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
+              <button type="submit" disabled={saving || !receiptUserId || !selectedInvoiceId || !receiptAmount} className="px-4 py-2 bg-green-600 text-white rounded text-[13px] font-medium hover:bg-green-700 disabled:opacity-50 transition-colors inline-flex items-center gap-2">
+                {saving ? <><ButtonSpinner /> Processing...</> : <><Save className="w-4 h-4" /> Record Receipt</>}
+              </button>
+            </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6">
             <div className="space-y-6">
               <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-                <h2 className="text-[14px] font-semibold text-heading mb-2">Receipt Details</h2>
                 <p className="text-[13px] text-muted">Select a member and their pending invoice to record a payment.</p>
                 <div>
                   <label className="block text-[13px] font-medium text-heading mb-1">Member *</label>
@@ -647,12 +659,6 @@ export default function Payments() {
                                 {receiptAmount && Number(receiptAmount) >= totalDue && (
                                   <p className="text-[11px] text-green-600 dark:text-green-400 mt-1">Full payment — invoice will be marked as PAID.</p>
                                 )}
-                              </div>
-                              <div className="flex gap-3">
-                                <button type="button" onClick={() => setReceiptModal(false)} className="flex-1 py-2.5 border border-border rounded-lg text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
-                                <button type="submit" disabled={saving} className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
-                                  {saving ? <><ButtonSpinner /> Processing...</> : <><Save className="w-4 h-4" /> Record Receipt — ₹{receiptAmount ? fmt(Number(receiptAmount)) : '0'}</>}
-                                </button>
                               </div>
                             </>
                           );
@@ -717,10 +723,18 @@ export default function Payments() {
       <Modal open={editModalOpen} onClose={() => setEditModalOpen(false)} title="Edit Receipt" full>
         {error && <div className="mb-4 p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 rounded-lg text-[13px]">{error}</div>}
         <form onSubmit={handleEditSubmit}>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-[14px] font-semibold text-heading">Receipt Details</h2>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={() => setEditModalOpen(false)} className="px-4 py-2 border border-border rounded text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
+              <button type="submit" disabled={saving || !editForm.amount} className="px-4 py-2 bg-indigo-600 text-white rounded text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors inline-flex items-center gap-2">
+                {saving ? <><ButtonSpinner /> Saving...</> : <><Save className="w-4 h-4" /> Update Receipt</>}
+              </button>
+            </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6">
             <div className="space-y-6">
               <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-                <h2 className="text-[14px] font-semibold text-heading mb-2">Receipt Details</h2>
                 <div>
                   <label className="block text-[13px] font-medium text-heading mb-1">Amount (₹) *</label>
                   <input type="number" min="1" value={editForm.amount} onChange={e => setEditForm({...editForm, amount: e.target.value})} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" required />
@@ -728,12 +742,6 @@ export default function Payments() {
                 <div>
                   <label className="block text-[13px] font-medium text-heading mb-1">Description</label>
                   <input type="text" value={editForm.description} onChange={e => setEditForm({...editForm, description: e.target.value})} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" />
-                </div>
-                <div className="flex gap-3">
-                  <button type="button" onClick={() => setEditModalOpen(false)} className="flex-1 py-2.5 border border-border rounded-lg text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
-                  <button type="submit" disabled={saving} className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
-                    {saving ? <><ButtonSpinner /> Saving...</> : <><Save className="w-4 h-4" /> Update Receipt</>}
-                  </button>
                 </div>
               </div>
             </div>

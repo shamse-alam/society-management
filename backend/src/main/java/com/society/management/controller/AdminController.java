@@ -41,6 +41,7 @@ public class AdminController {
     private final PermissionService permissionService;
     private final FundReleaseService fundReleaseService;
     private final TypeConfigService typeConfigService;
+    private final DataCleanupService dataCleanupService;
 
     public AdminController(AuthService authService, UserService userService, PropertyService propertyService,
                            PaymentService paymentService, AmenityBookingService bookingService,
@@ -57,7 +58,8 @@ public class AdminController {
                            SocietyConfigService societyConfigService,
                            PermissionService permissionService,
                            FundReleaseService fundReleaseService,
-                           TypeConfigService typeConfigService) {
+                           TypeConfigService typeConfigService,
+                           DataCleanupService dataCleanupService) {
         this.authService = authService;
         this.userService = userService;
         this.propertyService = propertyService;
@@ -80,6 +82,7 @@ public class AdminController {
         this.permissionService = permissionService;
         this.fundReleaseService = fundReleaseService;
         this.typeConfigService = typeConfigService;
+        this.dataCleanupService = dataCleanupService;
     }
 
     // ---- User Management ----
@@ -822,5 +825,12 @@ public class AdminController {
     public ResponseEntity<MessageResponse> deleteExpenseType(@PathVariable Long id) {
         typeConfigService.deleteExpenseType(id);
         return ResponseEntity.ok(new MessageResponse("Expense type deleted successfully"));
+    }
+
+    // ─── Data Cleanup (ADMIN only) ─────────────────────────────────
+
+    @DeleteMapping("/cleanup")
+    public ResponseEntity<Map<String, Long>> cleanupAllData() {
+        return ResponseEntity.ok(dataCleanupService.cleanupAll());
     }
 }

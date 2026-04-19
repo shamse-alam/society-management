@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { userAPI } from '../services/api';
 import { useToast } from '../components/Toast';
+import { ButtonSpinner } from '../components/Spinner';
 import { ListSkeleton } from '../components/Skeleton';
 import EmptyState from '../components/EmptyState';
 import Modal from '../components/Modal';
@@ -19,6 +20,7 @@ export default function MyMoveRequests() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ moveType: 'MOVE_IN', scheduledDate: '', timeSlot: '', vehicleDetails: '', moversCompany: '', moversPhone: '', notes: '' });
 
   useEffect(() => { fetchRequests(); }, []);
@@ -36,6 +38,7 @@ export default function MyMoveRequests() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSaving(true);
     try {
       await userAPI.createMoveRequest(form);
       toast.success('Move request submitted');
@@ -44,6 +47,8 @@ export default function MyMoveRequests() {
       fetchRequests();
     } catch {
       toast.error('Failed to submit request');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -62,13 +67,13 @@ export default function MyMoveRequests() {
   if (loading) return <ListSkeleton />;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-xl font-bold text-heading">My Move Requests</h1>
-          <p className="text-[13px] text-muted mt-1">{requests.length} requests</p>
+          <h1 className="text-xl font-semibold text-heading">My Move Requests</h1>
+          <p className="text-[13px] text-muted mt-0.5">{requests.length} requests</p>
         </div>
-        <button onClick={() => setShowModal(true)} className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-lg text-[13px] font-medium hover:bg-indigo-700 transition-colors">
+        <button onClick={() => setShowModal(true)} className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded text-[13px] font-medium hover:bg-indigo-700 transition-colors">
           <Plus className="w-4 h-4" /> New Request
         </button>
       </div>
@@ -115,10 +120,16 @@ export default function MyMoveRequests() {
       {showModal && (
         <Modal open title="New Move Request" onClose={() => setShowModal(false)} full>
           <form onSubmit={handleSubmit}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-[14px] font-semibold text-heading">Move Details</h2>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border border-border rounded text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
+                <button type="submit" disabled={saving || !form.scheduledDate} className="px-4 py-2 bg-indigo-600 text-white rounded text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors inline-flex items-center gap-2">{saving ? <><ButtonSpinner /> Submitting...</> : <><Save className="w-4 h-4" /> Submit Request</>}</button>
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6">
               <div className="space-y-6">
                 <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-                  <h2 className="text-[14px] font-semibold text-heading mb-2">Move Details</h2>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[13px] font-medium text-heading mb-1">Scheduled Date *</label>
@@ -147,10 +158,6 @@ export default function MyMoveRequests() {
                     <label className="block text-[13px] font-medium text-heading mb-1">Notes</label>
                     <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })}
                       className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading resize-none" rows={3} placeholder="Any additional details..." />
-                  </div>
-                  <div className="flex gap-3">
-                    <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-2.5 border border-border rounded-lg text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
-                    <button type="submit" className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg text-[13px] font-medium hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"><Save className="w-4 h-4" /> Submit Request</button>
                   </div>
                 </div>
               </div>

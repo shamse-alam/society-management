@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { userAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { ListSkeleton } from '../components/Skeleton';
+import { ButtonSpinner } from '../components/Spinner';
 import EmptyState from '../components/EmptyState';
 import Modal from '../components/Modal';
 import { Car, Plus, Edit2, Trash2, Bike, Zap, CircleDot, ParkingSquare, Save } from 'lucide-react';
@@ -27,6 +28,7 @@ export default function MyVehicles() {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ vehicleNumber: '', vehicleType: 'CAR', make: '', model: '', color: '', stickerNumber: '' });
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => { fetchData(); }, []);
 
@@ -44,6 +46,7 @@ export default function MyVehicles() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSaving(true);
     try {
       if (editing) {
         await userAPI.updateVehicle(editing.id, form);
@@ -57,6 +60,8 @@ export default function MyVehicles() {
       fetchData();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to save vehicle');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -86,13 +91,13 @@ export default function MyVehicles() {
   if (loading) return <ListSkeleton />;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-xl font-bold text-heading">My Vehicles</h1>
-          <p className="text-[13px] text-muted mt-1">{vehicles.length} registered vehicles &middot; {slots.length} parking slots assigned</p>
+          <h1 className="text-xl font-semibold text-heading">My Vehicles</h1>
+          <p className="text-[13px] text-muted mt-0.5">{vehicles.length} registered vehicles &middot; {slots.length} parking slots assigned</p>
         </div>
-        <button onClick={openAdd} className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-lg text-[13px] font-medium hover:bg-indigo-700 transition-colors">
+        <button onClick={openAdd} className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded text-[13px] font-medium hover:bg-indigo-700 transition-colors">
           <Plus className="w-4 h-4" /> Add Vehicle
         </button>
       </div>
@@ -171,10 +176,16 @@ export default function MyVehicles() {
       {showModal && (
         <Modal open title={editing ? 'Edit Vehicle' : 'Register Vehicle'} onClose={() => { setShowModal(false); setEditing(null); }} full>
           <form onSubmit={handleSubmit}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-[14px] font-semibold text-heading">Vehicle Details</h2>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => { setShowModal(false); setEditing(null); }} className="px-4 py-2 border border-border rounded text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
+                <button type="submit" disabled={saving || !form.vehicleNumber || !form.vehicleType} className="px-4 py-2 bg-indigo-600 text-white rounded text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors inline-flex items-center gap-2">{saving ? <ButtonSpinner /> : <Save className="w-4 h-4" />} {saving ? 'Saving...' : (editing ? 'Update Vehicle' : 'Register Vehicle')}</button>
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6">
               <div className="space-y-6">
                 <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-                  <h2 className="text-[14px] font-semibold text-heading mb-2">Vehicle Details</h2>
                   <div>
                     <label className="block text-[13px] font-medium text-heading mb-1">Vehicle Number *</label>
                     <input type="text" required value={form.vehicleNumber} onChange={e => setForm({ ...form, vehicleNumber: e.target.value })}
@@ -203,10 +214,6 @@ export default function MyVehicles() {
                       <input type="text" value={form.stickerNumber} onChange={e => setForm({ ...form, stickerNumber: e.target.value })}
                         className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" placeholder="STK-001" />
                     </div>
-                  </div>
-                  <div className="flex gap-3">
-                    <button type="button" onClick={() => { setShowModal(false); setEditing(null); }} className="flex-1 py-2.5 border border-border rounded-lg text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
-                    <button type="submit" className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg text-[13px] font-medium hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"><Save className="w-4 h-4" /> {editing ? 'Update Vehicle' : 'Register Vehicle'}</button>
                   </div>
                 </div>
               </div>

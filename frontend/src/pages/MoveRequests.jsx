@@ -85,11 +85,11 @@ export default function MoveRequests() {
   if (loading) return <TableSkeleton />;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-xl font-bold text-heading">Move In/Out Requests</h1>
-          <p className="text-[13px] text-muted mt-1">{requests.length} requests</p>
+          <h1 className="text-xl font-semibold text-heading">Move In/Out Requests</h1>
+          <p className="text-[13px] text-muted mt-0.5">{requests.length} requests</p>
         </div>
         <div className="flex items-center gap-2">
           <Filter className="w-4 h-4 text-muted" />
@@ -207,7 +207,7 @@ export default function MoveRequests() {
             </div>
             <button onClick={actionModal.action === 'approve' ? handleApprove : handleReject}
               className={`w-full py-2.5 text-white rounded-lg text-[13px] font-medium transition-colors ${
-                actionModal.action === 'approve' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
+                actionModal.action === 'approve' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-red-600 hover:bg-red-700'
               }`}>
               {actionModal.action === 'approve' ? 'Approve Request' : 'Reject Request'}
             </button>

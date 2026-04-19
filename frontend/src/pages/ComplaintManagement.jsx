@@ -217,10 +217,18 @@ export default function ComplaintManagement() {
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Update Complaint" full>
         {selected && (
           <form onSubmit={handleUpdate}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-[14px] font-semibold text-heading">Complaint Details</h2>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => setModalOpen(false)} className="px-4 py-2 border border-border rounded text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
+                <button type="submit" disabled={saving} className="px-4 py-2 bg-indigo-600 text-white rounded text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors inline-flex items-center gap-2">
+                  {saving ? <><ButtonSpinner /> Updating...</> : <><Save className="w-4 h-4" /> Update Complaint</>}
+                </button>
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6">
               <div className="space-y-6">
                 <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-                  <h2 className="text-[14px] font-semibold text-heading mb-2">Complaint Details</h2>
                   <div className="p-3 bg-card-alt rounded-lg border border-border">
                     <span className="text-[13px] font-semibold text-heading">{selected.title}</span>
                     <p className="text-[12px] text-muted mt-0.5">{selected.userName}{selected.userUnit ? ` — ${propertyLabel} ${selected.userUnit}` : ''}</p>
@@ -240,12 +248,6 @@ export default function ComplaintManagement() {
                   <div>
                     <label className="block text-[13px] font-medium text-heading mb-1">Admin Remarks</label>
                     <textarea value={updateForm.adminRemarks} onChange={(e) => setUpdateForm({ ...updateForm, adminRemarks: e.target.value })} rows={3} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading resize-none" placeholder="Add remarks or resolution notes..." />
-                  </div>
-                  <div className="flex gap-3">
-                    <button type="button" onClick={() => setModalOpen(false)} className="flex-1 py-2.5 border border-border rounded-lg text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
-                    <button type="submit" disabled={saving} className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
-                      {saving ? <><ButtonSpinner /> Updating...</> : <><Save className="w-4 h-4" /> Update Complaint</>}
-                    </button>
                   </div>
                 </div>
               </div>

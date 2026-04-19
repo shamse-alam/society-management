@@ -225,10 +225,18 @@ export default function NoticeBoard() {
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editingId ? 'Edit Notice' : 'New Notice'} full>
         {error && <div className="mb-4 p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 rounded-lg text-[13px]">{error}</div>}
         <form onSubmit={handleSubmit}>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-[14px] font-semibold text-heading">Notice Details</h2>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={() => setModalOpen(false)} className="px-4 py-2 border border-border rounded text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
+              <button type="submit" disabled={saving || !form.title || !form.content} className="px-4 py-2 bg-indigo-600 text-white rounded text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors inline-flex items-center gap-2">
+                {saving ? <><ButtonSpinner /> Saving...</> : <><Save className="w-4 h-4" /> {editingId ? 'Update Notice' : 'Publish Notice'}</>}
+              </button>
+            </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6">
             <div className="space-y-6">
               <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-                <h2 className="text-[14px] font-semibold text-heading mb-2">Notice Details</h2>
                 <div>
                   <label className="block text-[13px] font-medium text-heading mb-1">Title *</label>
                   <input type="text" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" required placeholder="Notice title" />
@@ -236,12 +244,6 @@ export default function NoticeBoard() {
                 <div>
                   <label className="block text-[13px] font-medium text-heading mb-1">Content</label>
                   <textarea value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} rows={4} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading resize-none" placeholder="Notice details..." />
-                </div>
-                <div className="flex gap-3">
-                  <button type="button" onClick={() => setModalOpen(false)} className="flex-1 py-2.5 border border-border rounded-lg text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
-                  <button type="submit" disabled={saving} className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg text-[13px] font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
-                    {saving ? <><ButtonSpinner /> Saving...</> : <><Save className="w-4 h-4" /> {editingId ? 'Update Notice' : 'Publish Notice'}</>}
-                  </button>
                 </div>
               </div>
             </div>

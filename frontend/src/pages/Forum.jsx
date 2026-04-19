@@ -4,6 +4,7 @@ import { userAPI, adminAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import { ListSkeleton } from '../components/Skeleton';
+import { ButtonSpinner } from '../components/Spinner';
 import EmptyState from '../components/EmptyState';
 import Modal from '../components/Modal';
 import { MessageCircle, Plus, Pin, Lock, Trash2, Clock, User, Save } from 'lucide-react';
@@ -38,6 +39,7 @@ export default function Forum() {
   const [showModal, setShowModal] = useState(false);
   const [activeCat, setActiveCat] = useState('ALL');
   const [form, setForm] = useState({ title: '', category: 'GENERAL', content: '' });
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => { fetchTopics(); }, [activeCat]);
 
@@ -55,6 +57,7 @@ export default function Forum() {
 
   const handleCreate = async (e) => {
     e.preventDefault();
+    setSaving(true);
     try {
       await userAPI.createForumTopic(form);
       toast.success('Topic created');
@@ -63,6 +66,8 @@ export default function Forum() {
       fetchTopics();
     } catch {
       toast.error('Failed to create topic');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -98,13 +103,13 @@ export default function Forum() {
   if (loading) return <ListSkeleton />;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
+    <div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-xl font-bold text-heading">Discussion Forum</h1>
-          <p className="text-[13px] text-muted mt-1">{topics.length} topics</p>
+          <h1 className="text-xl font-semibold text-heading">Discussion Forum</h1>
+          <p className="text-[13px] text-muted mt-0.5">{topics.length} topics</p>
         </div>
-        <button onClick={() => setShowModal(true)} className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-lg text-[13px] font-medium hover:bg-indigo-700 transition-colors">
+        <button onClick={() => setShowModal(true)} className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded text-[13px] font-medium hover:bg-indigo-700 transition-colors">
           <Plus className="w-4 h-4" /> New Topic
         </button>
       </div>
@@ -165,10 +170,16 @@ export default function Forum() {
       {showModal && (
         <Modal open title="New Discussion Topic" onClose={() => setShowModal(false)} full>
           <form onSubmit={handleCreate}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-[14px] font-semibold text-heading">Topic Details</h2>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border border-border rounded text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
+                <button type="submit" disabled={saving || !form.title || !form.content} className="px-4 py-2 bg-indigo-600 text-white rounded text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors inline-flex items-center gap-2">{saving ? <><ButtonSpinner /> Saving...</> : <><Save className="w-4 h-4" /> Create Topic</>}</button>
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6">
               <div className="space-y-6">
                 <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-                  <h2 className="text-[14px] font-semibold text-heading mb-2">Topic Details</h2>
                   <div>
                     <label className="block text-[13px] font-medium text-heading mb-1">Title *</label>
                     <input type="text" required value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
@@ -178,10 +189,6 @@ export default function Forum() {
                     <label className="block text-[13px] font-medium text-heading mb-1">Content *</label>
                     <textarea required value={form.content} onChange={e => setForm({ ...form, content: e.target.value })}
                       className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading resize-none" rows={5} placeholder="Start the discussion..." />
-                  </div>
-                  <div className="flex gap-3">
-                    <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-2.5 border border-border rounded-lg text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
-                    <button type="submit" className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg text-[13px] font-medium hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"><Save className="w-4 h-4" /> Create Topic</button>
                   </div>
                 </div>
               </div>

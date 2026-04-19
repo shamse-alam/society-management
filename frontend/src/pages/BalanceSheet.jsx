@@ -473,7 +473,7 @@ export default function BalanceSheet() {
               <button onClick={() => window.print()} className="inline-flex items-center gap-2 px-4 py-2 border border-border rounded text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">
                 <Printer className="w-4 h-4" /> Print
               </button>
-              <button onClick={exportPDF} className="inline-flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded text-[13px] font-medium hover:bg-red-600 transition-colors">
+              <button onClick={exportPDF} className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded text-[13px] font-medium hover:bg-red-700 transition-colors">
                 <FileDown className="w-4 h-4" /> Export PDF
               </button>
               <button onClick={exportExcel} className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded text-[13px] font-medium hover:bg-green-700 transition-colors">

@@ -458,22 +458,30 @@ export default function Expenses() {
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Create Voucher" full>
         {error && <div className="mb-4 p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 rounded-lg text-[13px]">{error}</div>}
 
+        {/* Shared title + buttons bar */}
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-[14px] font-semibold text-heading">Create Voucher</h2>
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={() => setModalOpen(false)} className="px-4 py-2 border border-border rounded text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
+            <button type={voucherMode === 'onetime' ? 'submit' : 'button'} form={voucherMode === 'onetime' ? 'onetime-voucher-form' : undefined} onClick={voucherMode === 'monthly' ? handleGenerate : undefined} disabled={saving || (voucherMode === 'onetime' && (!form.amount || !form.expenseDate))} className="px-4 py-2 bg-indigo-600 text-white rounded text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors inline-flex items-center gap-2">{saving ? <><ButtonSpinner /> {voucherMode === 'onetime' ? 'Saving...' : 'Generating...'}</> : <><Save className="w-4 h-4" /> Create Voucher</>}</button>
+          </div>
+        </div>
+
         {/* Mode toggle */}
-        <div className="flex items-center bg-card-alt rounded-xl p-1 mb-6 max-w-xs">
+        <div className="flex items-center bg-card-alt rounded-xl p-1.5 mb-6" style={{ width: '380px' }}>
           {[{ key: 'onetime', label: 'One-time', icon: Receipt }, { key: 'monthly', label: 'Monthly Recurring', icon: Calendar }].map(m => (
             <button key={m.key} type="button" onClick={() => { setVoucherMode(m.key); setError(''); }}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-medium transition-all ${voucherMode === m.key ? 'bg-card text-heading shadow-sm border border-border' : 'text-muted hover:text-sub'}`}>
+              className={`flex-1 flex items-center justify-center gap-1.5 px-4 py-5 rounded-lg text-[13px] font-medium whitespace-nowrap transition-all ${voucherMode === m.key ? 'bg-green-600 text-white shadow-sm' : 'text-muted hover:text-sub'}`}>
               <m.icon className="w-3.5 h-3.5" />{m.label}
             </button>
           ))}
         </div>
 
         {voucherMode === 'onetime' ? (
-          <form onSubmit={handleSubmit}>
+          <form id="onetime-voucher-form" onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6">
               <div className="space-y-6">
                 <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-                  <h2 className="text-[14px] font-semibold text-heading mb-2">Voucher Details</h2>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[13px] font-medium text-heading mb-1">Amount *</label>
@@ -505,10 +513,6 @@ export default function Expenses() {
                     <label className="block text-[13px] font-medium text-heading mb-1">Notes</label>
                     <textarea rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading resize-none" placeholder="Any additional notes" />
                   </div>
-                  <div className="flex gap-3">
-                    <button type="button" onClick={() => setModalOpen(false)} className="flex-1 py-2.5 border border-border rounded-lg text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
-                    <button type="submit" disabled={saving} className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">{saving ? <><ButtonSpinner /> Saving...</> : <><Save className="w-4 h-4" /> Create Voucher</>}</button>
-                  </div>
                 </div>
               </div>
               <div className="space-y-6 md:sticky md:top-4 md:self-start">
@@ -532,10 +536,10 @@ export default function Expenses() {
             </div>
           </form>
         ) : (
+          <>
           <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6">
             <div className="space-y-6">
               <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-                <h2 className="text-[14px] font-semibold text-heading mb-2">Monthly Voucher Generation</h2>
                 <p className="text-[13px] text-sub">Auto-generate DRAFT vouchers for all active contract vendors for the selected month. Vendors that already have a voucher for this month will be skipped.</p>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -572,14 +576,8 @@ export default function Expenses() {
                     </div>
                   );
                 })()}
-                <div className="flex gap-3 pt-2">
-                  <button type="button" onClick={() => setModalOpen(false)} className="flex-1 py-2.5 border border-border rounded-lg text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
-                  <button type="button" onClick={handleGenerate} disabled={saving} className="flex-1 py-2.5 bg-amber-600 text-white rounded-lg text-[13px] font-medium hover:bg-amber-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
-                    {saving ? <><ButtonSpinner /> Generating...</> : <><Calendar className="w-4 h-4" /> Generate Vouchers</>}
-                  </button>
                 </div>
               </div>
-            </div>
             <div className="space-y-6 md:sticky md:top-4 md:self-start">
               <div className="bg-card border border-border rounded-xl p-5">
                 <h2 className="text-[14px] font-semibold text-heading mb-1">How it works</h2>
@@ -603,17 +601,26 @@ export default function Expenses() {
               </div>
             </div>
           </div>
+          </>
         )}
       </Modal>
 
       {/* Pay Vendor Modal */}
       <Modal open={payModalOpen} onClose={() => setPayModalOpen(false)} title="Pay Vendor" full>
         <form onSubmit={handleMarkPaid}>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-[14px] font-semibold text-heading">Select Vendor & Vouchers</h2>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={() => setPayModalOpen(false)} className="px-4 py-2 border border-border rounded text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
+              <button type="submit" disabled={paySaving || paySelectedIds.length === 0} className="px-4 py-2 bg-green-600 text-white rounded text-[13px] font-medium hover:bg-green-700 disabled:opacity-50 transition-colors inline-flex items-center gap-2">
+                {paySaving ? <><ButtonSpinner /> Processing...</> : <><Banknote className="w-4 h-4" /> Pay {paySelectedIds.length} Voucher{paySelectedIds.length !== 1 ? 's' : ''}</>}
+              </button>
+            </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6">
             {/* Left — Vendor & Vouchers */}
             <div className="space-y-6">
               <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-                <h2 className="text-[14px] font-semibold text-heading mb-2">Select Vendor & Vouchers</h2>
 
                 <div>
                   <label className="block text-[13px] font-medium text-heading mb-1">Vendor</label>
@@ -663,14 +670,8 @@ export default function Expenses() {
                   </div>
                 )}
 
-                <div className="flex gap-3 pt-2">
-                  <button type="button" onClick={() => setPayModalOpen(false)} className="flex-1 py-2.5 border border-border rounded-lg text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
-                  <button type="submit" disabled={paySaving || paySelectedIds.length === 0} className="flex-1 py-2.5 bg-green-600 text-white rounded-lg text-[13px] font-medium hover:bg-green-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
-                    {paySaving ? <><ButtonSpinner /> Processing...</> : <><Banknote className="w-4 h-4" /> Pay {paySelectedIds.length} Voucher{paySelectedIds.length !== 1 ? 's' : ''} &middot; ₹{fmt(paySelectedTotal)}</>}
-                  </button>
                 </div>
               </div>
-            </div>
 
             {/* Right — Payment Details */}
             <div className="space-y-6 md:sticky md:top-4 md:self-start">

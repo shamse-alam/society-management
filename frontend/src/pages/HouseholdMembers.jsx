@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { adminAPI, userAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
+import { ButtonSpinner } from '../components/Spinner';
 import { ListSkeleton } from '../components/Skeleton';
 import EmptyState from '../components/EmptyState';
 import Modal from '../components/Modal';
@@ -33,6 +34,7 @@ export default function HouseholdMembers() {
   const [editing, setEditing] = useState(null);
   const [filterUnit, setFilterUnit] = useState('');
   const [form, setForm] = useState({ name: '', relation: 'SPOUSE', phone: '', email: '', unitNumber: '', canApproveVisitors: true });
+  const [saving, setSaving] = useState(false);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [properties, setProperties] = useState([]);
@@ -56,6 +58,7 @@ export default function HouseholdMembers() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSaving(true);
     try {
       let saved;
       if (editing) {
@@ -77,6 +80,8 @@ export default function HouseholdMembers() {
       fetchMembers();
     } catch {
       toast.error('Failed to save member');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -128,11 +133,11 @@ export default function HouseholdMembers() {
   if (loading) return <ListSkeleton />;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
+    <div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-xl font-bold text-heading">{isAdmin ? 'Household Members' : 'My Household'}</h1>
-          <p className="text-[13px] text-muted mt-1">{isAdmin ? `Manage family members across all ${propertyLabel.toLowerCase()}s` : 'Manage your family members'}</p>
+          <h1 className="text-xl font-semibold text-heading">{isAdmin ? 'Household Members' : 'My Household'}</h1>
+          <p className="text-[13px] text-muted mt-0.5">{isAdmin ? `Manage family members across all ${propertyLabel.toLowerCase()}s` : 'Manage your family members'}</p>
         </div>
         <div className="flex items-center gap-3">
           {isAdmin && (
@@ -142,7 +147,7 @@ export default function HouseholdMembers() {
               {properties.map(v => <option key={v.id} value={v.unitNumber}>{propertyLabel} {v.unitNumber}{v.ownerName ? ` (${v.ownerName})` : ''}</option>)}
             </select>
           )}
-          <button onClick={openAdd} className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-lg text-[13px] font-medium hover:bg-indigo-700 transition-colors">
+          <button onClick={openAdd} className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded text-[13px] font-medium hover:bg-indigo-700 transition-colors">
             <Plus className="w-4 h-4" /> Add Member
           </button>
         </div>
@@ -193,10 +198,16 @@ export default function HouseholdMembers() {
       {showModal && (
         <Modal open title={editing ? 'Edit Family Member' : 'Add Family Member'} onClose={() => { setShowModal(false); setEditing(null); }} full>
           <form onSubmit={handleSubmit}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-[14px] font-semibold text-heading">Member Details</h2>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => { setShowModal(false); setEditing(null); }} className="px-4 py-2 border border-border rounded text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
+                <button type="submit" disabled={saving || !form.name} className="px-4 py-2 bg-indigo-600 text-white rounded text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors inline-flex items-center gap-2">{saving ? <><ButtonSpinner /> Saving...</> : <><Save className="w-4 h-4" /> {editing ? 'Update Member' : 'Save Member'}</>}</button>
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6">
               <div className="space-y-6">
                 <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-                  <h2 className="text-[14px] font-semibold text-heading mb-2">Member Details</h2>
                   <div>
                     <label className="block text-[13px] font-medium text-heading mb-1">Name *</label>
                     <input type="text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
@@ -219,10 +230,6 @@ export default function HouseholdMembers() {
                       className="rounded border-input-border text-indigo-600 focus:ring-indigo-500" />
                     Can approve visitors
                   </label>
-                  <div className="flex gap-3">
-                    <button type="button" onClick={() => { setShowModal(false); setEditing(null); }} className="flex-1 py-2.5 border border-border rounded-lg text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
-                    <button type="submit" className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg text-[13px] font-medium hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"><Save className="w-4 h-4" /> {editing ? 'Update Member' : 'Save Member'}</button>
-                  </div>
                 </div>
               </div>
               <div className="space-y-6 md:sticky md:top-4 md:self-start">

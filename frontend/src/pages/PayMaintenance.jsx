@@ -1,5 +1,6 @@
 import { ButtonSpinner } from '../components/Spinner';
 import { FormSkeleton } from '../components/Skeleton';
+import EmptyState from '../components/EmptyState';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { adminAPI, userAPI } from '../services/api';
@@ -17,6 +18,11 @@ const PLANS = [
 ];
 
 const MONTHLY_RATE = 2000;
+
+const STATUS_COLORS = {
+  PAID: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400',
+  PENDING: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/15 dark:text-yellow-400',
+};
 
 export default function PayMaintenance() {
   const { isAdmin } = useAuth();
@@ -104,62 +110,68 @@ export default function PayMaintenance() {
     setModalOpen(true);
   };
 
+  const isFormValid = form.periodFrom && (!isAdmin || form.userId);
+
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Pay Maintenance</h1>
-          <p className="text-gray-500 mt-1">Monthly maintenance: ₹{formatNumber(MONTHLY_RATE)}/month</p>
+          <h1 className="text-xl font-semibold text-heading">Pay Maintenance</h1>
+          <p className="text-[13px] text-muted mt-0.5">Monthly maintenance: ₹{formatNumber(MONTHLY_RATE)}/month</p>
         </div>
-        <button onClick={openModal} className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-indigo-700 transition-colors">
-          <Plus className="w-5 h-5" /> Make Payment
+        <button onClick={openModal} className="btn-primary inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded text-[13px] font-medium hover:bg-green-700 transition-colors">
+          <Plus className="w-4 h-4" /> Make Payment
         </button>
       </div>
 
-      {success && <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm">{success}</div>}
+      {success && <div className="mb-4 p-3 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20 text-green-700 dark:text-green-400 rounded text-[13px]">{success}</div>}
 
       {loading ? (
         <FormSkeleton />
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
+        <div className="bg-card rounded-lg border border-border overflow-hidden">
+          <div className="table-container">
             <table className="w-full">
               <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Receipt</th>
-                  {isAdmin && <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">{`User / ${propertyLabel}`}</th>}
-                  <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Plan</th>
-                  <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Period</th>
-                  <th className="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Amount</th>
-                  <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Date</th>
+                <tr>
+                  <th className="text-left px-5 py-3 text-[11px] font-semibold text-muted uppercase tracking-wider bg-card-alt">Receipt</th>
+                  {isAdmin && <th className="text-left px-5 py-3 text-[11px] font-semibold text-muted uppercase tracking-wider bg-card-alt">{`User / ${propertyLabel}`}</th>}
+                  <th className="text-left px-5 py-3 text-[11px] font-semibold text-muted uppercase tracking-wider bg-card-alt">Plan</th>
+                  <th className="text-left px-5 py-3 text-[11px] font-semibold text-muted uppercase tracking-wider bg-card-alt">Period</th>
+                  <th className="text-left px-5 py-3 text-[11px] font-semibold text-muted uppercase tracking-wider bg-card-alt">Status</th>
+                  <th className="text-right px-5 py-3 text-[11px] font-semibold text-muted uppercase tracking-wider bg-card-alt">Amount</th>
+                  <th className="text-left px-5 py-3 text-[11px] font-semibold text-muted uppercase tracking-wider bg-card-alt">Date</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody>
                 {payments.map((p) => (
-                  <tr key={p.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-900">
-                        <Receipt className="w-4 h-4 text-gray-400" />{p.receiptNumber}
+                  <tr key={p.id} className="border-b border-dashed border-border hover:bg-card-hover transition-colors">
+                    <td className="px-5 py-3">
+                      <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-heading">
+                        <Receipt className="w-3.5 h-3.5 text-muted" />{p.receiptNumber}
                       </span>
                     </td>
                     {isAdmin && (
-                      <td className="px-6 py-4">
-                        <p className="text-sm font-medium text-gray-900">{p.fullName}</p>
-                        <p className="text-xs text-gray-500">{p.unitNumber || '-'}</p>
+                      <td className="px-5 py-3">
+                        <p className="text-[13px] font-medium text-heading">{p.fullName}</p>
+                        <p className="text-[11px] text-muted">{p.unitNumber || '-'}</p>
                       </td>
                     )}
-                    <td className="px-6 py-4">
-                      <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                    <td className="px-5 py-3">
+                      <span className="inline-flex px-2 py-0.5 rounded text-[11px] font-medium bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400">
                         {p.maintenancePlan || '-'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{p.periodFrom} to {p.periodTo}</td>
-                    <td className="px-6 py-4 text-right text-sm font-semibold text-gray-900">₹{formatNumber(p.amount)}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{formatDate(p.paidAt)}</td>
+                    <td className="px-5 py-3 text-[13px] text-muted">{p.periodFrom} to {p.periodTo}</td>
+                    <td className="px-5 py-3">
+                      <span className={`inline-flex px-2 py-0.5 rounded text-[11px] font-medium ${STATUS_COLORS[p.status] || 'bg-gray-100 text-gray-700 dark:bg-gray-500/15 dark:text-gray-400'}`}>{p.status}</span>
+                    </td>
+                    <td className="px-5 py-3 text-right text-[13px] font-semibold text-heading">₹{formatNumber(p.amount)}</td>
+                    <td className="px-5 py-3 text-[13px] text-muted">{formatDate(p.paidAt)}</td>
                   </tr>
                 ))}
                 {payments.length === 0 && (
-                  <tr><td colSpan={isAdmin ? 6 : 5} className="px-6 py-12 text-center text-gray-500">No maintenance payments yet</td></tr>
+                  <tr><td colSpan={isAdmin ? 7 : 6}><EmptyState icon={Receipt} title="No maintenance payments yet" description="Maintenance payments will appear here once recorded." /></td></tr>
                 )}
               </tbody>
             </table>
@@ -170,10 +182,18 @@ export default function PayMaintenance() {
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Make Maintenance Payment" full>
         {error && <div className="mb-4 p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 rounded-lg text-[13px]">{error}</div>}
         <form onSubmit={handlePay}>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-[14px] font-semibold text-heading">Payment Details</h2>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={() => setModalOpen(false)} className="px-4 py-2 border border-border rounded text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
+              <button type="submit" disabled={saving || !isFormValid} className="px-4 py-2 bg-green-600 text-white rounded text-[13px] font-medium hover:bg-green-700 disabled:opacity-50 transition-colors inline-flex items-center gap-2">
+                {saving ? <><ButtonSpinner /> Processing...</> : <><Save className="w-4 h-4" /> Pay ₹{formatNumber(amount)}</>}
+              </button>
+            </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6">
             <div className="space-y-6">
               <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-                <h2 className="text-[14px] font-semibold text-heading mb-2">Payment Details</h2>
                 {isAdmin && (
                   <div>
                     <label className="block text-[13px] font-medium text-heading mb-1">User *</label>
@@ -198,12 +218,6 @@ export default function PayMaintenance() {
                   <label className="block text-[13px] font-medium text-heading mb-1">Notes</label>
                   <input type="text" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
                     className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" placeholder="Any additional notes" />
-                </div>
-                <div className="flex gap-3">
-                  <button type="button" onClick={() => setModalOpen(false)} className="flex-1 py-2.5 border border-border rounded-lg text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
-                  <button type="submit" disabled={saving} className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
-                    {saving ? 'Processing...' : <><Save className="w-4 h-4" /> Pay ₹{formatNumber(amount)}</>}
-                  </button>
                 </div>
               </div>
             </div>

@@ -40,9 +40,15 @@ export default function Settings() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-xl font-bold text-heading">Settings</h1>
-        <p className="text-[13px] text-muted mt-1">Manage your account preferences, security, and display settings</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-xl font-semibold text-heading">Settings</h1>
+          <p className="text-[13px] text-muted mt-0.5">Manage your account preferences, security, and display settings</p>
+        </div>
+        <button type="submit" form="change-password-form" disabled={pwSaving}
+          className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors">
+          {pwSaving ? <><ButtonSpinner /> Updating...</> : <><Lock className="w-4 h-4" /> Update Password</>}
+        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6">
@@ -52,7 +58,7 @@ export default function Settings() {
           <div className="bg-card border border-border rounded-xl p-5">
             <h2 className="text-[14px] font-semibold text-heading mb-4">Password</h2>
             {pwError && <div className="mb-4 p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 rounded-lg text-[13px]">{pwError}</div>}
-            <form onSubmit={handleChangePassword} className="space-y-4">
+            <form id="change-password-form" onSubmit={handleChangePassword} className="space-y-4">
               <div>
                 <label className="block text-[13px] font-medium text-heading mb-1">Current Password</label>
                 <div className="relative">
@@ -80,10 +86,6 @@ export default function Settings() {
                     className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" required placeholder="Re-enter new password" />
                 </div>
               </div>
-              <button type="submit" disabled={pwSaving}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors">
-                {pwSaving ? <><ButtonSpinner /> Updating...</> : <><Lock className="w-4 h-4" /> Update Password</>}
-              </button>
             </form>
           </div>
 
@@ -172,11 +174,6 @@ export default function Settings() {
             </div>
           )}
 
-          {/* Cancel Button */}
-          <button type="button" onClick={() => navigate(-1)}
-            className="w-full py-2.5 border border-border rounded-lg text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">
-            Cancel
-          </button>
         </div>
 
         {/* Right Column — Profile Card & About */}

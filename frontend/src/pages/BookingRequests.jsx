@@ -63,9 +63,11 @@ export default function BookingRequests() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-xl font-semibold text-heading">Facility Reservation Requests</h1>
-        <p className="text-[13px] text-muted mt-0.5">Review and manage facility booking requests</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-xl font-semibold text-heading">Facility Reservation Requests</h1>
+          <p className="text-[13px] text-muted mt-0.5">Review and manage facility booking requests</p>
+        </div>
       </div>
 
       {success && <div className="mb-4 p-3 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20 text-green-700 dark:text-green-400 rounded text-[13px]">{success}</div>}

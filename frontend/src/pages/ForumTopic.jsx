@@ -80,9 +80,9 @@ export default function ForumTopicPage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div>
       {/* Header */}
-      <div>
+      <div className="mb-6">
         <button onClick={() => navigate('/forum')} className="flex items-center gap-1.5 text-[13px] text-muted hover:text-heading transition-colors mb-3">
           <ArrowLeft className="w-4 h-4" /> Back to Forum
         </button>
@@ -91,7 +91,7 @@ export default function ForumTopicPage() {
             <div className="flex items-center gap-2 flex-wrap">
               {topic.pinned && <Pin className="w-4 h-4 text-amber-500" />}
               {topic.locked && <Lock className="w-4 h-4 text-red-500" />}
-              <h1 className="text-xl font-bold text-heading">{topic.title}</h1>
+              <h1 className="text-xl font-semibold text-heading">{topic.title}</h1>
             </div>
             <div className="flex items-center gap-3 mt-1.5 text-[12px] text-muted">
               <span className="flex items-center gap-1"><User className="w-3 h-3" />{topic.createdByName}</span>

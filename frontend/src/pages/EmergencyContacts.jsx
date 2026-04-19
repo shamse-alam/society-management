@@ -3,6 +3,7 @@ import { adminAPI, userAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import { ListSkeleton } from '../components/Skeleton';
+import { ButtonSpinner } from '../components/Spinner';
 import EmptyState from '../components/EmptyState';
 import Modal from '../components/Modal';
 import { Phone, Plus, Edit2, Trash2, AlertTriangle, Shield, Flame, Heart, Building, Wrench, Info, Siren, Save } from 'lucide-react';
@@ -25,6 +26,7 @@ export default function EmergencyContacts() {
   const [showSOS, setShowSOS] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ name: '', phone: '', category: 'OTHER', address: '', active: true, displayOrder: 0 });
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetchContacts();
@@ -43,6 +45,7 @@ export default function EmergencyContacts() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSaving(true);
     try {
       if (editing) {
         await adminAPI.updateEmergencyContact(editing.id, form);
@@ -57,6 +60,8 @@ export default function EmergencyContacts() {
       fetchContacts();
     } catch (e) {
       toast.error('Failed to save contact');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -97,19 +102,19 @@ export default function EmergencyContacts() {
   if (loading) return <ListSkeleton />;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-xl font-bold text-heading">Emergency Contacts</h1>
-          <p className="text-[13px] text-muted mt-1">Important contacts for emergencies</p>
+          <h1 className="text-xl font-semibold text-heading">Emergency Contacts</h1>
+          <p className="text-[13px] text-muted mt-0.5">Important contacts for emergencies</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => setShowSOS(true)} className="flex items-center gap-2 px-4 py-2.5 bg-red-600 text-white rounded-lg text-[13px] font-bold hover:bg-red-700 transition-colors shadow-lg shadow-red-500/25">
+          <button onClick={() => setShowSOS(true)} className="inline-flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded text-[13px] font-bold hover:bg-red-700 transition-colors shadow-lg shadow-red-500/25">
             <Siren className="w-4 h-4" /> SOS Alert
           </button>
           {isAdmin && (
             <button onClick={() => { setEditing(null); setForm({ name: '', phone: '', category: 'OTHER', address: '', active: true, displayOrder: 0 }); setShowModal(true); }}
-              className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-lg text-[13px] font-medium hover:bg-indigo-700 transition-colors">
+              className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded text-[13px] font-medium hover:bg-indigo-700 transition-colors">
               <Plus className="w-4 h-4" /> Add Contact
             </button>
           )}
@@ -168,16 +173,19 @@ export default function EmergencyContacts() {
       {/* SOS Confirmation Modal */}
       {showSOS && (
         <Modal open title="SOS Alert" onClose={() => setShowSOS(false)}>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-[14px] font-semibold text-heading">Emergency Alert</h2>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setShowSOS(false)} className="px-4 py-2 border border-border rounded text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
+              <button onClick={handleSOS} className="px-4 py-2 bg-red-600 text-white rounded text-[13px] font-medium hover:bg-red-700 transition-colors inline-flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> Send SOS Alert</button>
+            </div>
+          </div>
           <div className="text-center py-4">
             <div className="w-16 h-16 bg-red-100 dark:bg-red-500/15 rounded-full flex items-center justify-center mx-auto mb-4">
               <AlertTriangle className="w-8 h-8 text-red-600 dark:text-red-400" />
             </div>
             <h3 className="text-lg font-bold text-heading mb-2">Are you sure?</h3>
-            <p className="text-[13px] text-muted mb-6">This will immediately alert all society admins about an emergency at your location.</p>
-            <div className="flex gap-3">
-              <button onClick={() => setShowSOS(false)} className="flex-1 py-2.5 border border-border rounded-lg text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
-              <button onClick={handleSOS} className="flex-1 py-2.5 bg-red-600 text-white rounded-lg text-[13px] font-medium hover:bg-red-700 transition-colors">Send SOS Alert</button>
-            </div>
+            <p className="text-[13px] text-muted">This will immediately alert all society admins about an emergency at your location.</p>
           </div>
         </Modal>
       )}
@@ -186,10 +194,16 @@ export default function EmergencyContacts() {
       {showModal && (
         <Modal open title={editing ? 'Edit Emergency Contact' : 'Add Emergency Contact'} onClose={() => { setShowModal(false); setEditing(null); }} full>
           <form onSubmit={handleSubmit}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-[14px] font-semibold text-heading">Contact Details</h2>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => { setShowModal(false); setEditing(null); }} className="px-4 py-2 border border-border rounded text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
+                <button type="submit" disabled={saving || !form.name || !form.phone} className="px-4 py-2 bg-indigo-600 text-white rounded text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors inline-flex items-center gap-2">{saving ? <ButtonSpinner /> : <Save className="w-4 h-4" />} {saving ? 'Saving...' : (editing ? 'Update Contact' : 'Add Contact')}</button>
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6">
               <div className="space-y-6">
                 <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-                  <h2 className="text-[14px] font-semibold text-heading mb-2">Contact Details</h2>
                   <div>
                     <label className="block text-[13px] font-medium text-heading mb-1">Name *</label>
                     <input type="text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
@@ -206,10 +220,6 @@ export default function EmergencyContacts() {
                       <input type="text" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })}
                         className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" placeholder="Sector 5, near Main Gate" />
                     </div>
-                  </div>
-                  <div className="flex gap-3">
-                    <button type="button" onClick={() => { setShowModal(false); setEditing(null); }} className="flex-1 py-2.5 border border-border rounded-lg text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
-                    <button type="submit" className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg text-[13px] font-medium hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"><Save className="w-4 h-4" /> {editing ? 'Update Contact' : 'Add Contact'}</button>
                   </div>
                 </div>
               </div>

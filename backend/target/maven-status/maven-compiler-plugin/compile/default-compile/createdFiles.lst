@@ -152,6 +152,7 @@ com/society/management/dto/VendorBankAccountRequest.class
 com/society/management/entity/PaymentStatus.class
 com/society/management/entity/Vendor$VendorBuilder.class
 com/society/management/entity/RsvpStatus.class
+com/society/management/service/DataCleanupService.class
 com/society/management/entity/SocietyConfig.class
 com/society/management/repository/PropertyRepository.class
 com/society/management/dto/SocietyConfigRequest.class
