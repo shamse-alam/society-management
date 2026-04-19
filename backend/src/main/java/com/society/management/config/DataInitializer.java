@@ -2,11 +2,13 @@ package com.society.management.config;
 
 import com.society.management.entity.*;
 import com.society.management.repository.*;
+import jakarta.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 public class DataInitializer implements CommandLineRunner {
@@ -15,15 +17,31 @@ public class DataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EntityManager entityManager;
 
-    public DataInitializer(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public DataInitializer(UserRepository userRepository, PasswordEncoder passwordEncoder,
+                           EntityManager entityManager) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.entityManager = entityManager;
     }
 
     @Override
     public void run(String... args) {
+        dropStaleConstraints();
         seedUsers();
+    }
+
+    @Transactional
+    void dropStaleConstraints() {
+        // payment_type was converted from enum to String — drop the old Hibernate check constraint
+        try {
+            entityManager.createNativeQuery(
+                "ALTER TABLE payments DROP CONSTRAINT IF EXISTS payments_payment_type_check"
+            ).executeUpdate();
+        } catch (Exception e) {
+            log.debug("Could not drop payments_payment_type_check (may not exist): {}", e.getMessage());
+        }
     }
 
     private void seedUsers() {
