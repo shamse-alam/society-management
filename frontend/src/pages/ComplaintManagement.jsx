@@ -2,10 +2,10 @@ import { ButtonSpinner } from '../components/Spinner';
 import { ListSkeleton } from '../components/Skeleton';
 import EmptyState from '../components/EmptyState';
 import { useState, useEffect } from 'react';
-import { adminAPI } from '../services/api';
+import { adminAPI, userAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import Modal from '../components/Modal';
-import { MessageSquare, Clock, CheckCircle2, AlertCircle, XCircle, Search, ChevronDown, Paperclip, Image, Save } from 'lucide-react';
+import { MessageSquare, Clock, CheckCircle2, AlertCircle, XCircle, Search, ChevronDown, Paperclip, Plus, Save } from 'lucide-react';
 import { useSocietyConfig } from '../context/SocietyConfigContext';
 
 const STATUS_CONFIG = {
@@ -47,6 +47,9 @@ export default function ComplaintManagement() {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [registerOpen, setRegisterOpen] = useState(true);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createForm, setCreateForm] = useState({ title: '', description: '', category: 'GENERAL', priority: 'MEDIUM' });
+  const [createSaving, setCreateSaving] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -77,6 +80,18 @@ export default function ComplaintManagement() {
     finally { setSaving(false); }
   };
 
+  const handleCreate = async (e) => {
+    e.preventDefault(); setCreateSaving(true);
+    try {
+      await userAPI.createComplaint(createForm);
+      toast.success('Complaint raised');
+      setCreateOpen(false);
+      setCreateForm({ title: '', description: '', category: 'GENERAL', priority: 'MEDIUM' });
+      fetchData();
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed to raise complaint'); }
+    finally { setCreateSaving(false); }
+  };
+
   const filtered = complaints.filter(c => {
     const matchSearch = !search || c.title?.toLowerCase().includes(search.toLowerCase()) || c.userName?.toLowerCase().includes(search.toLowerCase()) || c.userUnit?.toLowerCase().includes(search.toLowerCase());
     const matchStatus = !filterStatus || c.status === filterStatus;
@@ -98,6 +113,9 @@ export default function ComplaintManagement() {
           <h1 className="text-xl font-semibold text-heading">Complaint Management</h1>
           <p className="text-[13px] text-muted mt-0.5">Manage resident complaints and service requests</p>
         </div>
+        <button onClick={() => setCreateOpen(true)} className="btn-primary inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded text-[13px] font-medium hover:bg-indigo-700 transition-colors">
+          <Plus className="w-4 h-4" /> Raise Complaint
+        </button>
       </div>
 
       {/* Stat Cards */}
@@ -212,6 +230,46 @@ export default function ComplaintManagement() {
           </>
         )}
       </div>
+
+      {/* Create Complaint Modal */}
+      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Raise Complaint">
+        <form onSubmit={handleCreate} className="space-y-4">
+          <div>
+            <label className="block text-[13px] font-medium text-heading mb-1">Title</label>
+            <input type="text" required value={createForm.title} onChange={e => setCreateForm(f => ({ ...f, title: e.target.value }))}
+              className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" placeholder="Brief description of the issue" />
+          </div>
+          <div>
+            <label className="block text-[13px] font-medium text-heading mb-1">Description</label>
+            <textarea rows={3} value={createForm.description} onChange={e => setCreateForm(f => ({ ...f, description: e.target.value }))}
+              className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading resize-none" placeholder="Detailed description..." />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[13px] font-medium text-heading mb-1">Category</label>
+              <select value={createForm.category} onChange={e => setCreateForm(f => ({ ...f, category: e.target.value }))}
+                className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading">
+                {['PLUMBING', 'ELECTRICAL', 'HOUSEKEEPING', 'SECURITY', 'PARKING', 'NOISE', 'GENERAL', 'OTHER'].map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[13px] font-medium text-heading mb-1">Priority</label>
+              <select value={createForm.priority} onChange={e => setCreateForm(f => ({ ...f, priority: e.target.value }))}
+                className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading">
+                <option value="LOW">Low</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="HIGH">High</option>
+              </select>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <button type="button" onClick={() => setCreateOpen(false)} className="px-4 py-2 border border-border rounded text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
+            <button type="submit" disabled={createSaving} className="px-4 py-2 bg-indigo-600 text-white rounded text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors inline-flex items-center gap-2">
+              {createSaving ? <><ButtonSpinner /> Submitting...</> : <><Save className="w-4 h-4" /> Submit</>}
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Update Modal */}
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Update Complaint" full>

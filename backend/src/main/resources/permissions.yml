@@ -52,7 +52,7 @@ roles:
       - pattern: "/api/accountant/**"
         methods: ALL
       - pattern: "/api/user/**"
-        methods: [GET]
+        methods: ALL
       - pattern: "/api/notifications/**"
         methods: ALL
 
