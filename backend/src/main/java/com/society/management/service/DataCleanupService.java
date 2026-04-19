@@ -178,13 +178,10 @@ public class DataCleanupService {
         deleted.put("incomeTypes", deleteAll(incomeTypeRepository));
         deleted.put("expenseTypes", deleteAll(expenseTypeRepository));
 
-        // Tier 9: Users — keep only admin
+        // Tier 9: Users — keep only the original 'admin' user
         long usersBefore = userRepository.count();
         userRepository.findAll().stream()
-                .filter(u -> {
-                    String roles = u.getRoles() != null ? u.getRoles().toUpperCase() : "";
-                    return !roles.contains("ADMIN");
-                })
+                .filter(u -> !"admin".equals(u.getUsername()))
                 .forEach(userRepository::delete);
         long usersAfter = userRepository.count();
         deleted.put("users", usersBefore - usersAfter);
