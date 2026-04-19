@@ -12,5 +12,6 @@ public enum NotificationType {
     FORUM_REPLY,
     EVENT_NEW,
     MOVE_REQUEST,
+    FUND_RELEASE,
     GENERAL
 }

@@ -27,13 +27,16 @@ public class PaymentService {
     private final UserRepository userRepository;
     private final PropertyRepository propertyRepository;
     private final NotificationService notificationService;
+    private final TypeConfigService typeConfigService;
 
     public PaymentService(PaymentRepository paymentRepository, UserRepository userRepository,
-                          PropertyRepository propertyRepository, NotificationService notificationService) {
+                          PropertyRepository propertyRepository, NotificationService notificationService,
+                          TypeConfigService typeConfigService) {
         this.paymentRepository = paymentRepository;
         this.userRepository = userRepository;
         this.propertyRepository = propertyRepository;
         this.notificationService = notificationService;
+        this.typeConfigService = typeConfigService;
     }
 
     public PaymentResponse makePayment(PaymentRequest request, String currentUsername) {
@@ -47,7 +50,8 @@ public class PaymentService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        PaymentType type = PaymentType.valueOf(request.getPaymentType());
+        String type = request.getPaymentType();
+        typeConfigService.getIncomeTypeByCode(type); // validate type exists
 
         Payment payment = Payment.builder()
                 .user(user)
@@ -136,7 +140,8 @@ public class PaymentService {
                     .orElseThrow(() -> new RuntimeException("User not found"));
             payment.setUser(user);
         }
-        payment.setPaymentType(PaymentType.valueOf(request.getPaymentType()));
+        typeConfigService.getIncomeTypeByCode(request.getPaymentType()); // validate
+        payment.setPaymentType(request.getPaymentType());
         payment.setAmount(request.getAmount());
         payment.setDescription(request.getDescription());
         payment.setPeriodFrom(request.getPeriodFrom() != null ? LocalDate.parse(request.getPeriodFrom()) : null);
@@ -164,7 +169,7 @@ public class PaymentService {
     }
 
     public List<PaymentResponse> getPaymentsByUserAndType(Long userId, String type) {
-        return paymentRepository.findByUserIdAndPaymentTypeOrderByCreatedAtDesc(userId, PaymentType.valueOf(type)).stream()
+        return paymentRepository.findByUserIdAndPaymentTypeOrderByCreatedAtDesc(userId, type).stream()
                 .map(PaymentResponse::from).collect(Collectors.toList());
     }
 
@@ -174,7 +179,7 @@ public class PaymentService {
     }
 
     public List<PaymentResponse> getAllPaymentsByType(String type) {
-        return paymentRepository.findByPaymentTypeOrderByCreatedAtDesc(PaymentType.valueOf(type)).stream()
+        return paymentRepository.findByPaymentTypeOrderByCreatedAtDesc(type).stream()
                 .map(PaymentResponse::from).collect(Collectors.toList());
     }
 
@@ -188,7 +193,7 @@ public class PaymentService {
     public List<PaymentResponse> getMyPaymentsByType(String username, String type) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        return paymentRepository.findByUserIdAndPaymentTypeOrderByCreatedAtDesc(user.getId(), PaymentType.valueOf(type)).stream()
+        return paymentRepository.findByUserIdAndPaymentTypeOrderByCreatedAtDesc(user.getId(), type).stream()
                 .map(PaymentResponse::from).collect(Collectors.toList());
     }
 
@@ -234,7 +239,8 @@ public class PaymentService {
     }
 
     public Map<String, Object> generateInvoices(InvoiceGenerationRequest request) {
-        PaymentType type = PaymentType.valueOf(request.getPaymentType());
+        String type = request.getPaymentType();
+        IncomeType incomeType = typeConfigService.getIncomeTypeByCode(type);
         boolean oneTime = "ONE_TIME".equals(request.getPeriodMode());
 
         LocalDate periodFrom = null;
@@ -311,7 +317,7 @@ public class PaymentService {
                     .periodFrom(periodFrom)
                     .periodTo(periodTo)
                     .dueDate(dueDate)
-                    .description(type.name() + " — " + periodLabel)
+                    .description(incomeType.getDisplayName() + " — " + periodLabel)
                     .paidAt(null)
                     .build();
 
@@ -320,7 +326,7 @@ public class PaymentService {
 
             notificationService.createNotification(
                     resident,
-                    "Payment Due: " + type.name(),
+                    "Payment Due: " + incomeType.getDisplayName(),
                     "Rs. " + amount + " due by " + dueDate + " — " + periodLabel,
                     NotificationType.PAYMENT_DUE,
                     payment.getId()
@@ -357,7 +363,7 @@ public class PaymentService {
                 notificationService.createNotification(
                         payment.getUser(),
                         "Late Fee Updated",
-                        "A penalty of Rs. " + penalty + " (" + daysOverdue + " days overdue @ " + request.getAnnualRate() + "% p.a.) has been applied to your " + payment.getPaymentType().name() + " payment",
+                        "A penalty of Rs. " + penalty + " (" + daysOverdue + " days overdue @ " + request.getAnnualRate() + "% p.a.) has been applied to your " + payment.getPaymentType() + " payment",
                         NotificationType.PAYMENT_REMINDER,
                         payment.getId()
                 );

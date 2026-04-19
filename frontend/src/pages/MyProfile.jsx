@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import { userAPI } from '../services/api';
 import UserAvatar from '../components/UserAvatar';
 import { useToast } from '../components/Toast';
-import { User, Mail, Phone, MapPin, Building2, Pencil, Save, X, CreditCard, CalendarDays, AlertCircle, CheckCircle2, Clock, IndianRupee, Camera, Wrench, Landmark, UserPlus, CalendarCheck, ChevronDown, Home } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Building2, Pencil, Save, X, CreditCard, CalendarDays, AlertCircle, CheckCircle2, Clock, IndianRupee, Camera, ChevronDown, Home } from 'lucide-react';
 import { useSocietyConfig } from '../context/SocietyConfigContext';
+import { getTypeColor } from '../utils/typeColors';
 
 const STATUS_BADGE = {
   PAID: 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400',
@@ -13,20 +14,6 @@ const STATUS_BADGE = {
   OVERDUE: 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400',
   CONFIRMED: 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400',
   CANCELLED: 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400',
-};
-
-const TYPE_COLORS = {
-  MAINTENANCE: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
-  CORPUS: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
-  MEMBERSHIP: 'bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-400',
-  AMENITY_BOOKING: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
-};
-
-const TYPE_ICONS = {
-  MAINTENANCE: Wrench,
-  CORPUS: Landmark,
-  MEMBERSHIP: UserPlus,
-  AMENITY_BOOKING: CalendarCheck,
 };
 
 const fmt = (n) => Number(n).toLocaleString('en-IN', { minimumFractionDigits: 0 });
@@ -283,11 +270,9 @@ export default function MyProfile() {
               <tbody>
                 {pendingPayments.map((p) => (
                   <tr key={p.id} className="border-b border-dashed border-border hover:bg-card-hover transition-colors">
-                    <td className="px-5 py-3">{(() => { const Icon = TYPE_ICONS[p.paymentType]; return (
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${TYPE_COLORS[p.paymentType] || 'bg-gray-100 text-gray-700'}`}>
-                        {Icon && <Icon className="w-3 h-3" />}{p.paymentType?.replace(/_/g, ' ')}
-                      </span>
-                    ); })()}</td>
+                    <td className="px-5 py-3"><span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${getTypeColor(p.paymentType)}`}>
+                        {p.paymentType?.replace(/_/g, ' ')}
+                      </span></td>
                     <td className="px-5 py-3 text-[13px] text-muted">{p.description || '-'}</td>
                     <td className="px-5 py-3 text-[13px] text-muted">{p.periodFrom ? `${p.periodFrom} to ${p.periodTo}` : 'One-Time'}</td>
                     <td className="px-5 py-3 text-right text-[13px] font-semibold text-amber-700 dark:text-amber-400">₹{fmt(p.amount)}</td>
@@ -330,11 +315,9 @@ export default function MyProfile() {
               <tbody>
                 {payments.map((p) => (
                   <tr key={p.id} className="border-b border-dashed border-border hover:bg-card-hover transition-colors">
-                    <td className="px-5 py-3">{(() => { const Icon = TYPE_ICONS[p.paymentType]; return (
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${TYPE_COLORS[p.paymentType] || 'bg-gray-100 text-gray-700'}`}>
-                        {Icon && <Icon className="w-3 h-3" />}{p.paymentType?.replace(/_/g, ' ')}
-                      </span>
-                    ); })()}</td>
+                    <td className="px-5 py-3"><span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${getTypeColor(p.paymentType)}`}>
+                        {p.paymentType?.replace(/_/g, ' ')}
+                      </span></td>
                     <td className="px-5 py-3 text-[13px] text-muted">{p.periodFrom ? `${p.periodFrom} to ${p.periodTo}` : 'One-Time'}</td>
                     <td className="px-5 py-3 text-[13px] text-muted">{p.description || '-'}</td>
                     <td className="px-5 py-3 text-right text-[13px] font-semibold text-heading">₹{fmt(p.amount)}</td>

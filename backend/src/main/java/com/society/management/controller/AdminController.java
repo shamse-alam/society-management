@@ -39,6 +39,8 @@ public class AdminController {
     private final MoveService moveService;
     private final SocietyConfigService societyConfigService;
     private final PermissionService permissionService;
+    private final FundReleaseService fundReleaseService;
+    private final TypeConfigService typeConfigService;
 
     public AdminController(AuthService authService, UserService userService, PropertyService propertyService,
                            PaymentService paymentService, AmenityBookingService bookingService,
@@ -53,7 +55,9 @@ public class AdminController {
                            EventService eventService,
                            MoveService moveService,
                            SocietyConfigService societyConfigService,
-                           PermissionService permissionService) {
+                           PermissionService permissionService,
+                           FundReleaseService fundReleaseService,
+                           TypeConfigService typeConfigService) {
         this.authService = authService;
         this.userService = userService;
         this.propertyService = propertyService;
@@ -74,6 +78,8 @@ public class AdminController {
         this.moveService = moveService;
         this.societyConfigService = societyConfigService;
         this.permissionService = permissionService;
+        this.fundReleaseService = fundReleaseService;
+        this.typeConfigService = typeConfigService;
     }
 
     // ---- User Management ----
@@ -107,6 +113,12 @@ public class AdminController {
     public ResponseEntity<MessageResponse> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return ResponseEntity.ok(new MessageResponse("User deleted successfully"));
+    }
+
+    @PutMapping("/users/{id}/reset-password")
+    public ResponseEntity<MessageResponse> adminResetPassword(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        userService.adminResetPassword(id, body.get("newPassword"));
+        return ResponseEntity.ok(new MessageResponse("Password reset successfully"));
     }
 
     @PostMapping("/users/{id}/profile-image")
@@ -688,6 +700,44 @@ public class AdminController {
         return ResponseEntity.ok(moveService.completeRequest(id));
     }
 
+    // ---- Fund Releases ----
+
+    @GetMapping("/fund-releases")
+    public ResponseEntity<List<FundReleaseResponse>> getAllFundReleases() {
+        return ResponseEntity.ok(fundReleaseService.getAllReleases());
+    }
+
+    @GetMapping("/fund-releases/status/{status}")
+    public ResponseEntity<List<FundReleaseResponse>> getFundReleasesByStatus(@PathVariable String status) {
+        return ResponseEntity.ok(fundReleaseService.getReleasesByStatus(status));
+    }
+
+    @PostMapping("/fund-releases")
+    public ResponseEntity<FundReleaseResponse> createFundRelease(
+            @Valid @RequestBody FundReleaseRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(fundReleaseService.createReleaseRequest(request, userDetails.getUsername()));
+    }
+
+    @PutMapping("/fund-releases/{id}/approve")
+    public ResponseEntity<FundReleaseResponse> approveFundRelease(@PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(fundReleaseService.approveRelease(id, userDetails.getUsername()));
+    }
+
+    @PutMapping("/fund-releases/{id}/reject")
+    public ResponseEntity<FundReleaseResponse> rejectFundRelease(@PathVariable Long id,
+            @RequestBody FundReleaseRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(fundReleaseService.rejectRelease(id, request.getRejectionReason(), userDetails.getUsername()));
+    }
+
+    @PutMapping("/fund-releases/{id}/release")
+    public ResponseEntity<FundReleaseResponse> markFundReleased(@PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(fundReleaseService.markAsReleased(id, userDetails.getUsername()));
+    }
+
     // ---- Society Config ----
 
     @GetMapping("/society-config")
@@ -724,5 +774,53 @@ public class AdminController {
         result.put("roles", config.getRoles());
         result.put("public", config.getPublicEndpoints());
         return ResponseEntity.ok(result);
+    }
+
+    // ---- Income Types ----
+
+    @GetMapping("/income-types")
+    public ResponseEntity<List<IncomeTypeResponse>> getAllIncomeTypes() {
+        return ResponseEntity.ok(typeConfigService.getAllIncomeTypes());
+    }
+
+    @PostMapping("/income-types")
+    public ResponseEntity<IncomeTypeResponse> createIncomeType(@Valid @RequestBody IncomeTypeRequest request) {
+        return ResponseEntity.ok(typeConfigService.createIncomeType(request));
+    }
+
+    @PutMapping("/income-types/{id}")
+    public ResponseEntity<IncomeTypeResponse> updateIncomeType(@PathVariable Long id,
+                                                                @Valid @RequestBody IncomeTypeRequest request) {
+        return ResponseEntity.ok(typeConfigService.updateIncomeType(id, request));
+    }
+
+    @DeleteMapping("/income-types/{id}")
+    public ResponseEntity<MessageResponse> deleteIncomeType(@PathVariable Long id) {
+        typeConfigService.deleteIncomeType(id);
+        return ResponseEntity.ok(new MessageResponse("Income type deleted successfully"));
+    }
+
+    // ---- Expense Types ----
+
+    @GetMapping("/expense-types")
+    public ResponseEntity<List<ExpenseTypeResponse>> getAllExpenseTypes() {
+        return ResponseEntity.ok(typeConfigService.getAllExpenseTypes());
+    }
+
+    @PostMapping("/expense-types")
+    public ResponseEntity<ExpenseTypeResponse> createExpenseType(@Valid @RequestBody ExpenseTypeRequest request) {
+        return ResponseEntity.ok(typeConfigService.createExpenseType(request));
+    }
+
+    @PutMapping("/expense-types/{id}")
+    public ResponseEntity<ExpenseTypeResponse> updateExpenseType(@PathVariable Long id,
+                                                                  @Valid @RequestBody ExpenseTypeRequest request) {
+        return ResponseEntity.ok(typeConfigService.updateExpenseType(id, request));
+    }
+
+    @DeleteMapping("/expense-types/{id}")
+    public ResponseEntity<MessageResponse> deleteExpenseType(@PathVariable Long id) {
+        typeConfigService.deleteExpenseType(id);
+        return ResponseEntity.ok(new MessageResponse("Expense type deleted successfully"));
     }
 }

@@ -1,0 +1,22 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:5173",
+      "localStorage": [
+        {
+          "name": "theme",
+          "value": "light"
+        },
+        {
+          "name": "token",
+          "value": "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJlMmVfcHJlc2lkZW50Iiwicm9sZXMiOiJSRVNJREVOVCxQUkVTSURFTlQiLCJyb2xlIjoiUFJFU0lERU5UIiwiZmlyc3ROYW1lIjoiRTJFIiwibGFzdE5hbWUiOiJQcmVzaWRlbnQiLCJpYXQiOjE3NzY1Njg4ODUsImV4cCI6MTc3NjY1NTI4NX0.2T84-CZ1kD3u0nB5ok-e4oQSg7sxhOqexxiLiR3ARir9S_y_rO2jHRnRX9hElKdMFnu7iX7wBa59qLYHceiuiQ"
+        },
+        {
+          "name": "user",
+          "value": "{\"username\":\"e2e_president\",\"firstName\":\"E2E\",\"lastName\":\"President\",\"fullName\":\"E2E President\",\"role\":\"PRESIDENT\",\"roles\":[\"RESIDENT\",\"PRESIDENT\"],\"profileImage\":null,\"designation\":null}"
+        }
+      ]
+    }
+  ]
+}

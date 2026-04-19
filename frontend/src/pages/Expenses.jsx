@@ -4,34 +4,18 @@ import EmptyState from '../components/EmptyState';
 import { useState, useEffect, useMemo } from 'react';
 import { adminAPI } from '../services/api';
 import Modal from '../components/Modal';
-import { Plus, Trash2, IndianRupee, Search, TrendingDown, Receipt, Tag, Download, Zap, Droplets, Shield, Wrench, Wallet, Sparkles, TreePine, Hammer, CircleDot, ChevronDown, Save, CheckCircle, XCircle, Clock, Banknote, Upload, FileText, Calendar } from 'lucide-react';
+import { Plus, Trash2, IndianRupee, Search, TrendingDown, Receipt, Tag, Download, ChevronDown, Save, CheckCircle, XCircle, Clock, Banknote, Upload, FileText, Calendar } from 'lucide-react';
 import { useConfirm } from '../context/ConfirmContext';
+import { useSocietyConfig } from '../context/SocietyConfigContext';
+import { getTypeColor } from '../utils/typeColors';
 import Chart from 'react-apexcharts';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 
-const EXPENSE_CATEGORIES = ['ELECTRICITY', 'WATER', 'SECURITY', 'MAINTENANCE', 'SALARY', 'CLEANING', 'GARDENING', 'REPAIRS', 'OTHER'];
 const EXPENSE_STATUSES = ['DRAFT', 'APPROVED', 'PAID', 'CANCELLED'];
 const fmt = (n) => Number(n).toLocaleString('en-IN', { minimumFractionDigits: 0 });
-
-const CATEGORY_ICONS = {
-  ELECTRICITY: Zap, WATER: Droplets, SECURITY: Shield, MAINTENANCE: Wrench,
-  SALARY: Wallet, CLEANING: Sparkles, GARDENING: TreePine, REPAIRS: Hammer, OTHER: CircleDot,
-};
-
-const CATEGORY_COLORS = {
-  ELECTRICITY: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/15 dark:text-yellow-400',
-  WATER: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-400',
-  SECURITY: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
-  MAINTENANCE: 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400',
-  SALARY: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400',
-  CLEANING: 'bg-pink-100 text-pink-700 dark:bg-pink-500/15 dark:text-pink-400',
-  GARDENING: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
-  REPAIRS: 'bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-400',
-  OTHER: 'bg-gray-100 text-gray-600 dark:bg-gray-500/15 dark:text-gray-400',
-};
 
 const STATUS_COLORS = {
   DRAFT: 'bg-gray-100 text-gray-600 dark:bg-gray-500/15 dark:text-gray-400',
@@ -46,6 +30,8 @@ const STATUS_ICONS = {
 
 export default function Expenses() {
   const confirm = useConfirm();
+  const { expenseTypes } = useSocietyConfig();
+  const EXPENSE_CATEGORIES = expenseTypes.map(t => t.code);
   const [expenses, setExpenses] = useState([]);
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -407,11 +393,11 @@ export default function Expenses() {
                       {exp.paymentMode && <p className="text-[10px] text-muted mt-0.5">{exp.paymentMode}</p>}
                     </td>
                     <td className="px-5 py-3 text-[13px] text-muted">{exp.expenseDate}</td>
-                    <td className="px-5 py-3">{(() => { const Icon = CATEGORY_ICONS[exp.category]; return (
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${CATEGORY_COLORS[exp.category] || CATEGORY_COLORS.OTHER}`}>
-                        {Icon && <Icon className="w-3 h-3" />}{exp.category?.replace(/_/g, ' ')}
+                    <td className="px-5 py-3">
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${getTypeColor(exp.category)}`}>
+                        {exp.category?.replace(/_/g, ' ')}
                       </span>
-                    ); })()}</td>
+                    </td>
                     <td className="px-5 py-3">
                       <p className="text-[13px] text-heading">{exp.paidTo || '-'}</p>
                       {exp.description && <p className="text-[11px] text-muted truncate max-w-[200px]">{exp.description}</p>}

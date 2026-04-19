@@ -16,9 +16,13 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      const url = error.config?.url || '';
+      // Don't redirect on auth endpoints — let the login page handle its own errors
+      if (!url.includes('/auth/')) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
@@ -26,6 +30,8 @@ api.interceptors.response.use(
 
 export const publicAPI = {
   getSocietyConfig: () => api.get('/public/society-config'),
+  getIncomeTypes: () => api.get('/public/income-types'),
+  getExpenseTypes: () => api.get('/public/expense-types'),
 };
 
 export const authAPI = {
@@ -107,6 +113,14 @@ export const adminAPI = {
   getVendorsByType: (type) => api.get(`/admin/vendors/type/${type}`),
   getBalanceSheet: (from, to) => api.get('/admin/balance-sheet', { params: { from, to } }),
 
+  // Fund Releases
+  getFundReleases: () => api.get('/admin/fund-releases'),
+  getFundReleasesByStatus: (status) => api.get(`/admin/fund-releases/status/${status}`),
+  createFundRelease: (data) => api.post('/admin/fund-releases', data),
+  approveFundRelease: (id) => api.put(`/admin/fund-releases/${id}/approve`),
+  rejectFundRelease: (id, data) => api.put(`/admin/fund-releases/${id}/reject`, data),
+  markFundReleased: (id) => api.put(`/admin/fund-releases/${id}/release`),
+
   generateInvoices: (data) => api.post('/admin/invoices/generate', data),
   applyPenalties: (data) => api.post('/admin/invoices/apply-penalties', data),
   getDefaulters: () => api.get('/admin/reports/defaulters'),
@@ -178,6 +192,18 @@ export const adminAPI = {
     formData.append('file', file);
     return api.post('/admin/society-config/logo', formData);
   },
+
+  // Income Types
+  getIncomeTypes: () => api.get('/admin/income-types'),
+  createIncomeType: (data) => api.post('/admin/income-types', data),
+  updateIncomeType: (id, data) => api.put(`/admin/income-types/${id}`, data),
+  deleteIncomeType: (id) => api.delete(`/admin/income-types/${id}`),
+
+  // Expense Types
+  getExpenseTypes: () => api.get('/admin/expense-types'),
+  createExpenseType: (data) => api.post('/admin/expense-types', data),
+  updateExpenseType: (id, data) => api.put(`/admin/expense-types/${id}`, data),
+  deleteExpenseType: (id) => api.delete(`/admin/expense-types/${id}`),
 };
 
 export const guardAPI = {

@@ -5,6 +5,7 @@ import com.society.management.dto.UserResponse;
 import com.society.management.entity.User;
 import com.society.management.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -22,12 +23,14 @@ import java.util.stream.Collectors;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Value("${app.upload.dir:./uploads}")
     private String uploadDir;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public List<UserResponse> getAllUsers() {
@@ -111,6 +114,15 @@ public class UserService {
 
     public Path getProfileImagePath(String filename) {
         return Paths.get(uploadDir, "profiles", filename);
+    }
+
+    public void adminResetPassword(Long id, String newPassword) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setPasswordResetToken(null);
+        user.setPasswordResetTokenExpiry(null);
+        userRepository.save(user);
     }
 
     public List<UserResponse> getCommitteeMembers() {

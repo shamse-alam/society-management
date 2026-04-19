@@ -2,8 +2,9 @@ import { ButtonSpinner } from '../components/Spinner';
 import { TableSkeleton } from '../components/Skeleton';
 import { useState, useEffect, useCallback } from 'react';
 import { adminAPI } from '../services/api';
-import { IndianRupee, Filter, FileDown, FileSpreadsheet, Building2, Printer, CalendarDays, Wrench, Landmark, UserPlus, CalendarCheck, Zap, Droplets, Shield, Wallet, Sparkles, TreePine, Hammer, CircleDot, ChevronDown } from 'lucide-react';
+import { IndianRupee, Filter, FileDown, FileSpreadsheet, Building2, Printer, CalendarDays, ChevronDown, Lock, Unlock } from 'lucide-react';
 import { useSocietyConfig } from '../context/SocietyConfigContext';
+import { getTypeColor } from '../utils/typeColors';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
@@ -23,11 +24,6 @@ function formatDateIndian(d) {
   const date = new Date(d);
   return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 }
-
-const TYPE_ICONS = { MAINTENANCE: Wrench, CORPUS: Landmark, MEMBERSHIP: UserPlus, AMENITY_BOOKING: CalendarCheck };
-const TYPE_COLORS = { MAINTENANCE: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', CORPUS: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400', MEMBERSHIP: 'bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-400', AMENITY_BOOKING: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400' };
-const EXP_ICONS = { ELECTRICITY: Zap, WATER: Droplets, SECURITY: Shield, MAINTENANCE: Wrench, SALARY: Wallet, CLEANING: Sparkles, GARDENING: TreePine, REPAIRS: Hammer, OTHER: CircleDot };
-const EXP_COLORS = { ELECTRICITY: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/15 dark:text-yellow-400', WATER: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-400', SECURITY: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', MAINTENANCE: 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400', SALARY: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', CLEANING: 'bg-pink-100 text-pink-700 dark:bg-pink-500/15 dark:text-pink-400', GARDENING: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400', REPAIRS: 'bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-400', OTHER: 'bg-gray-100 text-gray-600 dark:bg-gray-500/15 dark:text-gray-400' };
 
 export default function BalanceSheet() {
   const { config: societyConfig } = useSocietyConfig();
@@ -104,9 +100,39 @@ export default function BalanceSheet() {
     });
     y = doc.lastAutoTable.finalY + 8;
 
-    const balance = Number(data.balance);
+    // Schedule C: Reserve Fund Summary
+    if (data.reserveBreakdown && data.reserveBreakdown.length > 0) {
+      doc.setFontSize(11); doc.setFont(undefined, 'bold');
+      doc.text('Schedule C: Reserve Fund Summary', 14, y); y += 2;
+      autoTable(doc, {
+        startY: y,
+        head: [['Fund Type', 'Collected (Rs.)', 'Released (Rs.)', 'Locked (Rs.)']],
+        body: [
+          ...data.reserveBreakdown.map(item => [item.fundType.replace(/_/g, ' '), fmt(item.collected), fmt(item.released), fmt(item.locked)]),
+          [{ content: 'Totals', styles: { fontStyle: 'bold' } }, { content: fmt(data.totalReserveFunds ?? 0), styles: { fontStyle: 'bold' } }, { content: fmt(data.releasedReserveFunds ?? 0), styles: { fontStyle: 'bold' } }, { content: fmt(data.lockedReserveFunds ?? 0), styles: { fontStyle: 'bold' } }],
+        ],
+        theme: 'grid', styles: { fontSize: 9, cellPadding: 2 },
+        headStyles: { fillColor: [217, 119, 6], textColor: 255, fontStyle: 'bold' },
+        columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' } },
+        margin: { left: 14, right: 14 },
+      });
+      y = doc.lastAutoTable.finalY + 8;
+    }
+
+    // Net Balance Summary
     doc.setFontSize(11); doc.setFont(undefined, 'bold');
-    doc.text(`Surplus / (Deficit) [A - B]: Rs. ${fmt(balance)}`, 14, y); y += 10;
+    doc.text('Net Balance Summary', 14, y); y += 6;
+    doc.setFontSize(9); doc.setFont(undefined, 'normal');
+    doc.text(`Operational Income: Rs. ${fmt(data.operationalIncome ?? data.totalIncome)}`, 14, y); y += 5;
+    doc.text(`Released Reserve Funds: Rs. ${fmt(data.releasedReserveFunds ?? 0)}`, 14, y); y += 5;
+    doc.text(`Total Expenditure: Rs. ${fmt(data.totalExpense)}`, 14, y); y += 5;
+    doc.setFont(undefined, 'bold');
+    doc.text(`Available Balance: Rs. ${fmt(data.availableBalance ?? data.balance)}`, 14, y); y += 5;
+    if (data.lockedReserveFunds > 0) {
+      doc.setFont(undefined, 'normal');
+      doc.text(`Locked Reserve Funds (not included): Rs. ${fmt(data.lockedReserveFunds)}`, 14, y); y += 5;
+    }
+    y += 5;
 
     if (data.incomeItems.length > 0) {
       if (y > 240) { doc.addPage(); y = 15; }
@@ -161,10 +187,22 @@ export default function BalanceSheet() {
       ...data.expenseBreakdown.map(i => [i.category.replace(/_/g, ' '), i.count, Number(i.amount)]),
       ['Total Expenditure', '', Number(data.totalExpense)],
       [],
-      ['Surplus / (Deficit)', '', Number(data.balance)],
+      ...(data.reserveBreakdown && data.reserveBreakdown.length > 0 ? [
+        ['RESERVE FUND SUMMARY'],
+        ['Fund Type', 'Collected (Rs.)', 'Released (Rs.)', 'Locked (Rs.)'],
+        ...data.reserveBreakdown.map(i => [i.fundType.replace(/_/g, ' '), Number(i.collected), Number(i.released), Number(i.locked)]),
+        ['Totals', Number(data.totalReserveFunds ?? 0), Number(data.releasedReserveFunds ?? 0), Number(data.lockedReserveFunds ?? 0)],
+        [],
+      ] : []),
+      ['NET BALANCE SUMMARY'],
+      ['Operational Income', '', Number(data.operationalIncome ?? data.totalIncome)],
+      ['Released Reserve Funds', '', Number(data.releasedReserveFunds ?? 0)],
+      ['Total Expenditure', '', Number(data.totalExpense)],
+      ['Available Balance', '', Number(data.availableBalance ?? data.balance)],
+      ...(data.lockedReserveFunds > 0 ? [['Locked Reserve Funds (not included)', '', Number(data.lockedReserveFunds)]] : []),
     ];
     const ws1 = XLSX.utils.aoa_to_sheet(summaryData);
-    ws1['!cols'] = [{ wch: 30 }, { wch: 10 }, { wch: 18 }];
+    ws1['!cols'] = [{ wch: 35 }, { wch: 18 }, { wch: 18 }, { wch: 18 }];
     XLSX.utils.book_append_sheet(wb, ws1, 'Summary');
 
     if (data.incomeItems.length > 0) {
@@ -233,18 +271,26 @@ export default function BalanceSheet() {
             </div>
 
             {/* Summary Figures */}
-            <div className="grid grid-cols-3 divide-x divide-dashed divide-border border-b border-dashed border-border">
-              <div className="p-6 text-center">
-                <p className="text-[11px] font-medium text-muted uppercase tracking-wider">Total Receipts (A)</p>
-                <p className="text-[22px] font-bold text-green-600 dark:text-green-400 mt-2"><IndianRupee className="w-5 h-5 inline" />{fmt(data.totalIncome)}</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-x divide-dashed divide-border border-b border-dashed border-border">
+              <div className="p-5 text-center">
+                <p className="text-[10px] font-medium text-muted uppercase tracking-wider">Operational Income</p>
+                <p className="text-[18px] font-bold text-green-600 dark:text-green-400 mt-1.5"><IndianRupee className="w-4 h-4 inline" />{fmt(data.operationalIncome ?? data.totalIncome)}</p>
               </div>
-              <div className="p-6 text-center">
-                <p className="text-[11px] font-medium text-muted uppercase tracking-wider">Total Payments (B)</p>
-                <p className="text-[22px] font-bold text-red-500 dark:text-red-400 mt-2"><IndianRupee className="w-5 h-5 inline" />{fmt(data.totalExpense)}</p>
+              <div className="p-5 text-center">
+                <p className="text-[10px] font-medium text-muted uppercase tracking-wider flex items-center justify-center gap-1"><Lock className="w-3 h-3" /> Reserve Funds (Locked)</p>
+                <p className="text-[18px] font-bold text-amber-600 dark:text-amber-400 mt-1.5"><IndianRupee className="w-4 h-4 inline" />{fmt(data.lockedReserveFunds ?? 0)}</p>
               </div>
-              <div className="p-6 text-center">
-                <p className="text-[11px] font-medium text-muted uppercase tracking-wider">Surplus / (Deficit)</p>
-                <p className={`text-[22px] font-bold mt-2 ${Number(data.balance) >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-red-500 dark:text-red-400'}`}><IndianRupee className="w-5 h-5 inline" />{fmt(data.balance)}</p>
+              <div className="p-5 text-center">
+                <p className="text-[10px] font-medium text-muted uppercase tracking-wider flex items-center justify-center gap-1"><Unlock className="w-3 h-3" /> Released Reserves</p>
+                <p className="text-[18px] font-bold text-emerald-600 dark:text-emerald-400 mt-1.5"><IndianRupee className="w-4 h-4 inline" />{fmt(data.releasedReserveFunds ?? 0)}</p>
+              </div>
+              <div className="p-5 text-center">
+                <p className="text-[10px] font-medium text-muted uppercase tracking-wider">Total Expenditure</p>
+                <p className="text-[18px] font-bold text-red-500 dark:text-red-400 mt-1.5"><IndianRupee className="w-4 h-4 inline" />{fmt(data.totalExpense)}</p>
+              </div>
+              <div className="p-5 text-center col-span-2 sm:col-span-3 lg:col-span-1 border-t lg:border-t-0 border-dashed border-border">
+                <p className="text-[10px] font-medium text-muted uppercase tracking-wider">Available Balance</p>
+                <p className={`text-[18px] font-bold mt-1.5 ${Number(data.availableBalance ?? data.balance) >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-red-500 dark:text-red-400'}`}><IndianRupee className="w-4 h-4 inline" />{fmt(data.availableBalance ?? data.balance)}</p>
               </div>
             </div>
 
@@ -266,14 +312,22 @@ export default function BalanceSheet() {
                       <tr><td colSpan={4} className="px-4 py-6 text-center text-[13px] text-muted">No income recorded</td></tr>
                     ) : (
                       <>
-                        {data.incomeBreakdown.map((item, i) => (
-                          <tr key={item.type} className="border-b border-dashed border-border">
-                            <td className="px-4 py-2.5 text-[13px] text-muted">{i + 1}</td>
-                            <td className="px-4 py-2.5 text-[13px] font-medium text-heading">{item.type.replace(/_/g, ' ')}</td>
-                            <td className="px-4 py-2.5 text-[13px] text-muted text-center">{item.count}</td>
-                            <td className="px-4 py-2.5 text-[13px] text-heading text-right">{fmt(item.amount)}</td>
-                          </tr>
-                        ))}
+                        {data.incomeBreakdown.map((item, i) => {
+                          const isReserve = item.type === 'CORPUS' || item.type === 'MEMBERSHIP';
+                          return (
+                            <tr key={item.type} className="border-b border-dashed border-border">
+                              <td className="px-4 py-2.5 text-[13px] text-muted">{i + 1}</td>
+                              <td className="px-4 py-2.5 text-[13px] font-medium text-heading">
+                                <span className="inline-flex items-center gap-1.5">
+                                  {item.type.replace(/_/g, ' ')}
+                                  {isReserve && <Lock className="w-3 h-3 text-amber-500" title="Reserve Fund - Locked" />}
+                                </span>
+                              </td>
+                              <td className="px-4 py-2.5 text-[13px] text-muted text-center">{item.count}</td>
+                              <td className="px-4 py-2.5 text-[13px] text-heading text-right">{fmt(item.amount)}</td>
+                            </tr>
+                          );
+                        })}
                         <tr>
                           <td colSpan={3} className="px-4 py-3 text-[13px] font-bold text-heading text-right">Total Income (A)</td>
                           <td className="px-4 py-3 text-[14px] font-bold text-green-600 dark:text-green-400 text-right">{fmt(data.totalIncome)}</td>
@@ -322,26 +376,80 @@ export default function BalanceSheet() {
               </div>
             </div>
 
+            {/* Schedule C: Reserve Fund Summary */}
+            {data.reserveBreakdown && data.reserveBreakdown.length > 0 && (
+              <div className="p-8 border-b border-dashed border-border">
+                <h4 className="text-[13px] font-semibold text-heading mb-4 flex items-center gap-2">
+                  Schedule C &mdash; Reserve Fund Summary
+                  <Lock className="w-3.5 h-3.5 text-amber-500" />
+                </h4>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr>
+                        <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-muted bg-card-alt rounded-l-lg">Fund Type</th>
+                        <th className="text-right px-4 py-2.5 text-[11px] font-semibold text-muted bg-card-alt">Collected</th>
+                        <th className="text-right px-4 py-2.5 text-[11px] font-semibold text-muted bg-card-alt">Released</th>
+                        <th className="text-right px-4 py-2.5 text-[11px] font-semibold text-muted bg-card-alt rounded-r-lg">Locked</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.reserveBreakdown.map((item) => (
+                        <tr key={item.fundType} className="border-b border-dashed border-border">
+                          <td className="px-4 py-2.5 text-[13px] font-medium text-heading flex items-center gap-1.5">
+                            <Lock className="w-3 h-3 text-amber-500" />
+                            {item.fundType.replace(/_/g, ' ')}
+                          </td>
+                          <td className="px-4 py-2.5 text-[13px] text-heading text-right">{fmt(item.collected)}</td>
+                          <td className="px-4 py-2.5 text-[13px] text-emerald-600 dark:text-emerald-400 text-right">{fmt(item.released)}</td>
+                          <td className="px-4 py-2.5 text-[13px] font-semibold text-amber-600 dark:text-amber-400 text-right">{fmt(item.locked)}</td>
+                        </tr>
+                      ))}
+                      <tr>
+                        <td className="px-4 py-3 text-[13px] font-bold text-heading text-right">Totals</td>
+                        <td className="px-4 py-3 text-[13px] font-bold text-heading text-right">{fmt(data.totalReserveFunds ?? 0)}</td>
+                        <td className="px-4 py-3 text-[13px] font-bold text-emerald-600 dark:text-emerald-400 text-right">{fmt(data.releasedReserveFunds ?? 0)}</td>
+                        <td className="px-4 py-3 text-[13px] font-bold text-amber-600 dark:text-amber-400 text-right">{fmt(data.lockedReserveFunds ?? 0)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <p className="text-[11px] text-muted mt-3 flex items-center gap-1">
+                  <Lock className="w-3 h-3" /> Locked reserve funds are not included in the available balance. They can only be released through the approval workflow.
+                </p>
+              </div>
+            )}
+
             {/* Grand Total / Net Balance */}
             <div className="p-8 border-b border-dashed border-border">
               <div className="flex justify-end">
-                <div className="w-full max-w-sm space-y-2">
+                <div className="w-full max-w-md space-y-2">
                   <div className="flex justify-between text-[13px]">
-                    <span className="text-muted">Total Income (A)</span>
-                    <span className="font-medium text-heading">{fmt(data.totalIncome)}</span>
+                    <span className="text-muted">Operational Income</span>
+                    <span className="font-medium text-heading">{fmt(data.operationalIncome ?? data.totalIncome)}</span>
                   </div>
                   <div className="flex justify-between text-[13px]">
-                    <span className="text-muted">Total Expenditure (B)</span>
-                    <span className="font-medium text-heading">{fmt(data.totalExpense)}</span>
+                    <span className="text-muted flex items-center gap-1"><Unlock className="w-3 h-3" /> Released Reserve Funds</span>
+                    <span className="font-medium text-emerald-600 dark:text-emerald-400">+ {fmt(data.releasedReserveFunds ?? 0)}</span>
+                  </div>
+                  <div className="flex justify-between text-[13px]">
+                    <span className="text-muted">Total Expenditure</span>
+                    <span className="font-medium text-red-500 dark:text-red-400">- {fmt(data.totalExpense)}</span>
                   </div>
                   <div className="border-t border-border pt-2 mt-2">
                     <div className="flex justify-between">
-                      <span className="text-[14px] font-bold text-heading">Surplus / (Deficit)</span>
-                      <span className={`text-[18px] font-bold ${Number(data.balance) >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-red-500 dark:text-red-400'}`}>
-                        <IndianRupee className="w-4 h-4 inline" />{fmt(data.balance)}
+                      <span className="text-[14px] font-bold text-heading">Available Balance</span>
+                      <span className={`text-[18px] font-bold ${Number(data.availableBalance ?? data.balance) >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-red-500 dark:text-red-400'}`}>
+                        <IndianRupee className="w-4 h-4 inline" />{fmt(data.availableBalance ?? data.balance)}
                       </span>
                     </div>
                   </div>
+                  {data.lockedReserveFunds > 0 && (
+                    <div className="flex justify-between text-[12px] pt-1">
+                      <span className="text-muted flex items-center gap-1"><Lock className="w-3 h-3 text-amber-500" /> Locked Reserve Funds (not included above)</span>
+                      <span className="font-medium text-amber-600 dark:text-amber-400">{fmt(data.lockedReserveFunds)}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -353,6 +461,9 @@ export default function BalanceSheet() {
                 <li>This is a computer-generated statement and does not require a signature.</li>
                 <li>All amounts are in Indian Rupees (INR).</li>
                 <li>Period: {periodLabel}.</li>
+                <li>Corpus and Membership funds are treated as reserve funds and are locked by default.</li>
+                <li>Reserve funds can only be released through the approval workflow (Reserve Funds page).</li>
+                <li>Available Balance = Operational Income + Released Reserves - Total Expenditure.</li>
                 <li>For any discrepancies, please contact the society management office.</li>
               </ul>
             </div>
@@ -398,13 +509,15 @@ export default function BalanceSheet() {
                     </thead>
                     <tbody>
                       {data.incomeItems.map((item, idx) => {
-                        const Icon = TYPE_ICONS[item.type];
+                        const reserveTypes = (data.reserveBreakdown || []).map(r => r.fundType);
+                        const isReserve = reserveTypes.includes(item.type);
                         return (
                           <tr key={idx} className="border-b border-dashed border-border hover:bg-card-hover transition-colors">
                             <td className="px-5 py-3 text-[13px] text-muted">{item.date}</td>
                             <td className="px-5 py-3">
-                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${TYPE_COLORS[item.type] || 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400'}`}>
-                                {Icon && <Icon className="w-3 h-3" />}{item.type.replace(/_/g, ' ')}
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${getTypeColor(item.type)}`}>
+                                {item.type.replace(/_/g, ' ')}
+                                {isReserve && <Lock className="w-2.5 h-2.5" />}
                               </span>
                             </td>
                             <td className="px-5 py-3 text-[13px] font-medium text-heading">{item.from}</td>
@@ -452,13 +565,12 @@ export default function BalanceSheet() {
                     </thead>
                     <tbody>
                       {data.expenseItems.map((item) => {
-                        const Icon = EXP_ICONS[item.category];
                         return (
                           <tr key={item.id} className="border-b border-dashed border-border hover:bg-card-hover transition-colors">
                             <td className="px-5 py-3 text-[13px] text-muted">{item.expenseDate}</td>
                             <td className="px-5 py-3">
-                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${EXP_COLORS[item.category] || EXP_COLORS.OTHER}`}>
-                                {Icon && <Icon className="w-3 h-3" />}{item.category.replace(/_/g, ' ')}
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${getTypeColor(item.category)}`}>
+                                {item.category.replace(/_/g, ' ')}
                               </span>
                             </td>
                             <td className="px-5 py-3 text-[13px] font-medium text-heading">{item.paidTo || '-'}</td>

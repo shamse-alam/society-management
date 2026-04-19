@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { Building2, Users, LayoutDashboard, LogOut, Menu, CreditCard, CalendarDays, ClipboardList, ChevronDown, Plus, Home, FileBarChart, Wallet, Receipt, Store, Sun, Moon, FileText, Bell, Search, X, Settings, Megaphone, MessageSquare, BarChart3, Shield, UserPlus, UserCheck, Car, ParkingSquare, FolderOpen, MessageCircle, Calendar, Truck, Cog, ArrowLeft, Landmark, IndianRupee, LifeBuoy } from 'lucide-react';
+import { Building2, Users, LayoutDashboard, LogOut, Menu, CreditCard, CalendarDays, ClipboardList, ChevronDown, Plus, Home, FileBarChart, Wallet, Receipt, Store, Sun, Moon, FileText, Bell, Search, X, Settings, Megaphone, MessageSquare, BarChart3, Shield, UserPlus, UserCheck, Car, ParkingSquare, FolderOpen, MessageCircle, Calendar, Truck, Cog, ArrowLeft, Landmark, IndianRupee, LifeBuoy, Lock } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import UserAvatar from './UserAvatar';
 import NotificationDropdown from './NotificationDropdown';
@@ -76,7 +76,7 @@ export default function Layout({ children }) {
   const propertyLabel = societyConfig.propertyLabel || 'Property';
   const p = location.pathname;
   const [accountsOpen, setAccountsOpen] = useState(
-    p === '/payments' || p === '/expenses' || p === '/vendors' || p.startsWith('/vendors/') || p === '/balance-sheet' || p === '/gst-report' || p === '/defaulter-report'
+    p === '/payments' || p === '/expenses' || p === '/vendors' || p.startsWith('/vendors/') || p === '/balance-sheet' || p === '/gst-report' || p === '/defaulter-report' || p === '/fund-releases'
   );
   const [userPaymentsOpen, setUserPaymentsOpen] = useState(
     p === '/pay-maintenance' || p === '/pay-membership' || p === '/pay-corpus'
@@ -102,7 +102,7 @@ export default function Layout({ children }) {
 
   const handleLogout = () => { logout(); navigate('/login'); };
   const isActive = (path) => p === path;
-  const isAccountsSection = p === '/payments' || p === '/expenses' || p === '/vendors' || p.startsWith('/vendors/') || p === '/balance-sheet' || p === '/gst-report' || p === '/defaulter-report';
+  const isAccountsSection = p === '/payments' || p === '/expenses' || p === '/vendors' || p.startsWith('/vendors/') || p === '/balance-sheet' || p === '/gst-report' || p === '/defaulter-report' || p === '/fund-releases';
   const isUserPaymentsSection = p === '/pay-maintenance' || p === '/pay-membership' || p === '/pay-corpus';
   const isSocietySection = p === '/users' || p === '/properties' || p === '/household' || p === '/vehicles' || p === '/parking' || p === '/move-requests' || p.startsWith('/users/');
   const isCommunitySection = p === '/notices' || p === '/polls' || p === '/emergency' || p === '/documents' || p.startsWith('/forum') || p === '/events';
@@ -125,6 +125,7 @@ export default function Layout({ children }) {
     { path: '/expenses', label: 'Expenditure', icon: Receipt },
     { path: '/vendors', label: 'Vendors', icon: Store },
     { path: '/balance-sheet', label: 'Receipts & Payments', icon: Wallet },
+    { path: '/fund-releases', label: 'Reserve Funds', icon: Lock },
     { path: '/gst-report', label: 'GST Statement', icon: FileText },
     { path: '/defaulter-report', label: 'Defaulter Report', icon: FileBarChart },
   ];

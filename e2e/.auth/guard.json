@@ -1,0 +1,22 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:5173",
+      "localStorage": [
+        {
+          "name": "theme",
+          "value": "light"
+        },
+        {
+          "name": "token",
+          "value": "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJndWFyZCIsInJvbGVzIjoiR1VBUkQiLCJyb2xlIjoiR1VBUkQiLCJmaXJzdE5hbWUiOiJTZWN1cml0eSIsImxhc3ROYW1lIjoiR3VhcmQiLCJpYXQiOjE3NzY1Njg4ODQsImV4cCI6MTc3NjY1NTI4NH0.uSVmKpiw0pzcHochcpL6tUoxqkyudn1YCUAMZStdXkfrYt9ZMltiV3JXbFuTRAaSGq1Olumm3tHWj-ehIdJwTg"
+        },
+        {
+          "name": "user",
+          "value": "{\"username\":\"guard\",\"firstName\":\"Security\",\"lastName\":\"Guard\",\"fullName\":\"Security Guard\",\"role\":\"GUARD\",\"roles\":[\"GUARD\"],\"profileImage\":null,\"designation\":null}"
+        }
+      ]
+    }
+  ]
+}

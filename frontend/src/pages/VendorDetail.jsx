@@ -2,46 +2,11 @@ import { FormSkeleton } from '../components/Skeleton';
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { adminAPI } from '../services/api';
-import { ArrowLeft, Phone, Mail, MapPin, Store, IndianRupee, Receipt, CalendarDays, Tag, CheckCircle2, XCircle, Zap, Droplets, Shield, Wrench, Wallet, Sparkles, TreePine, Hammer, CircleDot, ChevronDown, Landmark } from 'lucide-react';
+import { ArrowLeft, Phone, Mail, MapPin, Store, IndianRupee, Receipt, CalendarDays, Tag, CheckCircle2, XCircle, ChevronDown, Landmark } from 'lucide-react';
 import { formatDate } from '../utils/format';
+import { getTypeColor } from '../utils/typeColors';
 
 const fmt = (n) => Number(n).toLocaleString('en-IN', { minimumFractionDigits: 0 });
-
-const CATEGORY_COLORS = {
-  GARDENER: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400',
-  SECURITY: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
-  CLEANING: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-400',
-  ELECTRICIAN: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/15 dark:text-yellow-400',
-  PLUMBER: 'bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-400',
-  PAINTER: 'bg-pink-100 text-pink-700 dark:bg-pink-500/15 dark:text-pink-400',
-  CARPENTER: 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400',
-  UTILITY: 'bg-gray-100 text-gray-700 dark:bg-gray-500/15 dark:text-gray-400',
-  OTHER: 'bg-gray-100 text-gray-600 dark:bg-gray-500/15 dark:text-gray-400',
-};
-
-const EXPENSE_ICONS = {
-  ELECTRICITY: Zap,
-  WATER: Droplets,
-  SECURITY: Shield,
-  MAINTENANCE: Wrench,
-  SALARY: Wallet,
-  CLEANING: Sparkles,
-  GARDENING: TreePine,
-  REPAIRS: Hammer,
-  OTHER: CircleDot,
-};
-
-const EXPENSE_COLORS = {
-  ELECTRICITY: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/15 dark:text-yellow-400',
-  WATER: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-400',
-  SECURITY: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
-  MAINTENANCE: 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400',
-  SALARY: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400',
-  CLEANING: 'bg-pink-100 text-pink-700 dark:bg-pink-500/15 dark:text-pink-400',
-  GARDENING: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
-  REPAIRS: 'bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-400',
-  OTHER: 'bg-gray-100 text-gray-600 dark:bg-gray-500/15 dark:text-gray-400',
-};
 
 export default function VendorDetail() {
   const { id } = useParams();
@@ -114,7 +79,7 @@ export default function VendorDetail() {
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 <h1 className="text-xl font-semibold text-heading">{vendor.name}</h1>
-                <span className={`inline-flex px-2 py-0.5 rounded text-[11px] font-medium ${CATEGORY_COLORS[vendor.category] || CATEGORY_COLORS.OTHER}`}>{vendor.category}</span>
+                <span className={`inline-flex px-2 py-0.5 rounded text-[11px] font-medium ${getTypeColor(vendor.category)}`}>{vendor.category}</span>
                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${vendor.active ? 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400'}`}>
                   {vendor.active ? <><CheckCircle2 className="w-3 h-3" /> Active</> : <><XCircle className="w-3 h-3" /> Inactive</>}
                 </span>
@@ -222,11 +187,9 @@ export default function VendorDetail() {
                     {visibleExpenses.map((exp) => (
                       <tr key={exp.id} className="border-b border-dashed border-border hover:bg-card-hover transition-colors">
                         <td className="px-5 py-3 text-[13px] text-muted">{exp.expenseDate}</td>
-                        <td className="px-5 py-3">{(() => { const Icon = EXPENSE_ICONS[exp.category]; return (
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${EXPENSE_COLORS[exp.category] || EXPENSE_COLORS.OTHER}`}>
-                            {Icon && <Icon className="w-3 h-3" />}{exp.category?.replace(/_/g, ' ')}
-                          </span>
-                        ); })()}</td>
+                        <td className="px-5 py-3"><span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${getTypeColor(exp.category)}`}>
+                            {exp.category?.replace(/_/g, ' ')}
+                          </span></td>
                         <td className="px-5 py-3 text-[13px] text-muted">{exp.description || '-'}</td>
                         <td className="px-5 py-3 text-right text-[13px] font-semibold text-red-700 dark:text-red-400">₹{fmt(exp.amount)}</td>
                       </tr>

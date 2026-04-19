@@ -1,0 +1,22 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:5173",
+      "localStorage": [
+        {
+          "name": "theme",
+          "value": "light"
+        },
+        {
+          "name": "token",
+          "value": "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJlMmVfcmVzaWRlbnQiLCJyb2xlcyI6IlJFU0lERU5UIiwicm9sZSI6IlJFU0lERU5UIiwiZmlyc3ROYW1lIjoiRTJFIiwibGFzdE5hbWUiOiJSZXNpZGVudCIsImlhdCI6MTc3NjU2ODg4NCwiZXhwIjoxNzc2NjU1Mjg0fQ.orkm4v0WBG40VF0Ie3nxrOB-KQ1eBR-nDNDrpwQQarDspawtYlQon_yixz9TajWLbd3FwAUCWO74Q4xyKRSGQQ"
+        },
+        {
+          "name": "user",
+          "value": "{\"username\":\"e2e_resident\",\"firstName\":\"E2E\",\"lastName\":\"Resident\",\"fullName\":\"E2E Resident\",\"role\":\"RESIDENT\",\"roles\":[\"RESIDENT\"],\"profileImage\":null,\"designation\":null}"
+        }
+      ]
+    }
+  ]
+}

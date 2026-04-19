@@ -46,6 +46,7 @@ import SocietySettings from './pages/SocietySettings';
 import PayMaintenance from './pages/PayMaintenance';
 import MembershipPayment from './pages/MembershipPayment';
 import CorpusPayment from './pages/CorpusPayment';
+import FundReleases from './pages/FundReleases';
 import { ModalProvider } from './context/ModalContext';
 import { ConfirmProvider } from './context/ConfirmContext';
 
@@ -100,6 +101,8 @@ function AppRoutes() {
       {/* Vendors (admin only) */}
       <Route path="/vendors" element={<ProtectedRoute adminOnly><VendorManagement /></ProtectedRoute>} />
       <Route path="/vendors/:id" element={<ProtectedRoute adminOnly><VendorDetail /></ProtectedRoute>} />
+      {/* Fund Releases (admin only) */}
+      <Route path="/fund-releases" element={<ProtectedRoute adminOnly><FundReleases /></ProtectedRoute>} />
       {/* Reports (admin only) */}
       <Route path="/balance-sheet" element={<ProtectedRoute adminOnly><BalanceSheet /></ProtectedRoute>} />
       <Route path="/gst-report" element={<ProtectedRoute adminOnly><GSTReport /></ProtectedRoute>} />

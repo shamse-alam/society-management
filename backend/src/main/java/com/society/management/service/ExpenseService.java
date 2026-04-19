@@ -3,6 +3,7 @@ package com.society.management.service;
 import com.society.management.dto.*;
 import com.society.management.entity.*;
 import com.society.management.repository.ExpenseRepository;
+import com.society.management.repository.FundReleaseRepository;
 import com.society.management.repository.PaymentRepository;
 import com.society.management.repository.UserRepository;
 import com.society.management.repository.VendorRepository;
@@ -29,23 +30,29 @@ public class ExpenseService {
 
     private final ExpenseRepository expenseRepository;
     private final PaymentRepository paymentRepository;
+    private final FundReleaseRepository fundReleaseRepository;
     private final VendorRepository vendorRepository;
     private final UserRepository userRepository;
     private final EmailService emailService;
     private final SocietyConfigService societyConfigService;
+    private final TypeConfigService typeConfigService;
 
     @Value("${app.upload.dir:./uploads}")
     private String uploadDir;
 
     public ExpenseService(ExpenseRepository expenseRepository, PaymentRepository paymentRepository,
+                          FundReleaseRepository fundReleaseRepository,
                           VendorRepository vendorRepository, UserRepository userRepository,
-                          EmailService emailService, SocietyConfigService societyConfigService) {
+                          EmailService emailService, SocietyConfigService societyConfigService,
+                          TypeConfigService typeConfigService) {
         this.expenseRepository = expenseRepository;
         this.paymentRepository = paymentRepository;
+        this.fundReleaseRepository = fundReleaseRepository;
         this.vendorRepository = vendorRepository;
         this.userRepository = userRepository;
         this.emailService = emailService;
         this.societyConfigService = societyConfigService;
+        this.typeConfigService = typeConfigService;
     }
 
     private String generateVoucherNumber() {
@@ -295,13 +302,16 @@ public class ExpenseService {
         Map<String, BigDecimal> incomeByType = new LinkedHashMap<>();
         Map<String, Integer> incomeCountByType = new LinkedHashMap<>();
         for (Payment p : paidPayments) {
-            String type = p.getPaymentType().name();
+            String type = p.getPaymentType();
             incomeByType.merge(type, p.getAmount(), BigDecimal::add);
             incomeCountByType.merge(type, 1, Integer::sum);
         }
         List<BalanceSheetResponse.IncomeEntry> incomeBreakdown = new ArrayList<>();
-        incomeByType.forEach((type, amount) ->
-                incomeBreakdown.add(new BalanceSheetResponse.IncomeEntry(type, amount, incomeCountByType.get(type))));
+        incomeByType.forEach((type, amount) -> {
+            boolean gstApplicable = true;
+            try { gstApplicable = typeConfigService.getIncomeTypeByCode(type).isGstApplicable(); } catch (Exception ignored) {}
+            incomeBreakdown.add(new BalanceSheetResponse.IncomeEntry(type, amount, incomeCountByType.get(type), gstApplicable));
+        });
 
         Map<String, BigDecimal> expenseByCat = new LinkedHashMap<>();
         Map<String, Integer> expenseCountByCat = new LinkedHashMap<>();
@@ -310,13 +320,16 @@ public class ExpenseService {
             expenseCountByCat.merge(e.getCategory(), 1, Integer::sum);
         }
         List<BalanceSheetResponse.ExpenseEntry> expenseBreakdown = new ArrayList<>();
-        expenseByCat.forEach((cat, amount) ->
-                expenseBreakdown.add(new BalanceSheetResponse.ExpenseEntry(cat, amount, expenseCountByCat.get(cat))));
+        expenseByCat.forEach((cat, amount) -> {
+            ExpenseType et = typeConfigService.getExpenseTypeByCode(cat);
+            expenseBreakdown.add(new BalanceSheetResponse.ExpenseEntry(cat, amount, expenseCountByCat.get(cat),
+                    et != null && et.isGstIncluded()));
+        });
 
         List<BalanceSheetResponse.IncomeLineItem> incomeItems = paidPayments.stream()
                 .map(p -> new BalanceSheetResponse.IncomeLineItem(
                         p.getPaidAt() != null ? p.getPaidAt().toLocalDate().toString() : p.getCreatedAt().toLocalDate().toString(),
-                        p.getPaymentType().name(),
+                        p.getPaymentType(),
                         p.getUser().getFullName(),
                         p.getAmount(),
                         p.getDescription()
@@ -327,6 +340,43 @@ public class ExpenseService {
                 .map(ExpenseResponse::from)
                 .collect(Collectors.toList());
 
+        // Reserve fund calculations — dynamic from type config
+        Set<String> reserveTypeCodes = typeConfigService.getReserveFundTypes().stream()
+                .map(IncomeTypeResponse::getCode)
+                .collect(Collectors.toSet());
+
+        BigDecimal operationalIncome = paidPayments.stream()
+                .filter(p -> !reserveTypeCodes.contains(p.getPaymentType()))
+                .map(Payment::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalReserveFunds = paidPayments.stream()
+                .filter(p -> reserveTypeCodes.contains(p.getPaymentType()))
+                .map(Payment::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        List<FundReleaseStatus> releasedStatuses = List.of(FundReleaseStatus.APPROVED, FundReleaseStatus.RELEASED);
+        List<FundRelease> releasedFunds = fundReleaseRepository.findByStatusIn(releasedStatuses);
+
+        BigDecimal releasedReserveFunds = releasedFunds.stream()
+                .map(FundRelease::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal lockedReserveFunds = totalReserveFunds.subtract(releasedReserveFunds).max(BigDecimal.ZERO);
+        BigDecimal availableBalance = operationalIncome.add(releasedReserveFunds).subtract(totalExpense);
+
+        List<BalanceSheetResponse.ReserveFundEntry> reserveBreakdown = new ArrayList<>();
+        for (String rt : reserveTypeCodes) {
+            BigDecimal collected = paidPayments.stream()
+                    .filter(p -> rt.equals(p.getPaymentType()))
+                    .map(Payment::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal released = releasedFunds.stream()
+                    .filter(fr -> rt.equals(fr.getFundType()))
+                    .map(FundRelease::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+            reserveBreakdown.add(new BalanceSheetResponse.ReserveFundEntry(
+                    rt, collected, released, collected.subtract(released).max(BigDecimal.ZERO)));
+        }
+
         BalanceSheetResponse res = new BalanceSheetResponse();
         res.setTotalIncome(totalIncome);
         res.setTotalExpense(totalExpense);
@@ -335,6 +385,12 @@ public class ExpenseService {
         res.setExpenseBreakdown(expenseBreakdown);
         res.setIncomeItems(incomeItems);
         res.setExpenseItems(expenseItems);
+        res.setOperationalIncome(operationalIncome);
+        res.setTotalReserveFunds(totalReserveFunds);
+        res.setReleasedReserveFunds(releasedReserveFunds);
+        res.setLockedReserveFunds(lockedReserveFunds);
+        res.setAvailableBalance(availableBalance);
+        res.setReserveBreakdown(reserveBreakdown);
         return res;
     }
 }

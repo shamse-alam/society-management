@@ -41,7 +41,7 @@ public class PaymentResponse {
         r.setFullName(p.getUser().getFullName());
         r.setUnitNumber(p.getUser().getUnitNumber());
         r.setProfileImage(p.getUser().getProfileImage());
-        r.setPaymentType(p.getPaymentType().name());
+        r.setPaymentType(p.getPaymentType());
         r.setAmount(p.getAmount());
         r.setStatus(p.getStatus().name());
         r.setPeriodFrom(p.getPeriodFrom() != null ? p.getPeriodFrom().toString() : null);

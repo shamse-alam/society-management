@@ -142,21 +142,27 @@ public class PermissionService {
         for (String pattern : sortedPatterns) {
             Map<String, Set<String>> methodRoles = patternMethodRoles.get(pattern);
 
+            Set<String> allMethodRoles = methodRoles.containsKey("ALL")
+                    ? new LinkedHashSet<>(methodRoles.get("ALL"))
+                    : new LinkedHashSet<>();
+            allMethodRoles.add("ADMIN"); // ADMIN always has access
+
+            // Apply per-method rules first (merging ALL-method roles into each)
+            for (Map.Entry<String, Set<String>> me : methodRoles.entrySet()) {
+                if ("ALL".equals(me.getKey())) continue;
+                HttpMethod httpMethod = HttpMethod.valueOf(me.getKey());
+                Set<String> roleSet = new LinkedHashSet<>(allMethodRoles);
+                roleSet.addAll(me.getValue());
+                String[] roles = roleSet.toArray(new String[0]);
+                auth.requestMatchers(httpMethod, pattern).hasAnyRole(roles);
+            }
+
+            // Apply catch-all for remaining methods using only ALL-method roles
             if (methodRoles.containsKey("ALL")) {
-                // If any role has ALL methods, merge with specific method roles
-                Set<String> allMethodRoles = new LinkedHashSet<>(methodRoles.get("ALL"));
-                allMethodRoles.add("ADMIN"); // ADMIN always has access
                 String[] roles = allMethodRoles.toArray(new String[0]);
                 auth.requestMatchers(pattern).hasAnyRole(roles);
-            } else {
-                // Apply per-method rules
-                for (Map.Entry<String, Set<String>> me : methodRoles.entrySet()) {
-                    HttpMethod httpMethod = HttpMethod.valueOf(me.getKey());
-                    Set<String> roleSet = new LinkedHashSet<>(me.getValue());
-                    roleSet.add("ADMIN"); // ADMIN always has access
-                    String[] roles = roleSet.toArray(new String[0]);
-                    auth.requestMatchers(httpMethod, pattern).hasAnyRole(roles);
-                }
+            } else if (methodRoles.size() > 0 && !methodRoles.containsKey("ALL")) {
+                // No catch-all needed — only explicit methods are allowed
             }
         }
 

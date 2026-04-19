@@ -23,9 +23,8 @@ public class Payment extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private PaymentType paymentType;
+    private String paymentType;
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal amount;

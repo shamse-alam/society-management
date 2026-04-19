@@ -5,38 +5,17 @@ import { useState, useEffect, useMemo } from 'react';
 import { adminAPI } from '../services/api';
 import Modal from '../components/Modal';
 import UserAvatar from '../components/UserAvatar';
-import { Plus, Receipt, IndianRupee, TrendingUp, Clock, CheckCircle2, Eye, Download, Wrench, Landmark, UserPlus, CalendarCheck, Pencil, ChevronDown, FileText, AlertTriangle, CreditCard, Save } from 'lucide-react';
+import { Plus, Receipt, IndianRupee, TrendingUp, Clock, CheckCircle2, Eye, Download, Pencil, ChevronDown, FileText, AlertTriangle, CreditCard, Save } from 'lucide-react';
 import InfoTooltip from '../components/InfoTooltip';
 import { useToast } from '../components/Toast';
 import { useSocietyConfig } from '../context/SocietyConfigContext';
+import { getTypeColor } from '../utils/typeColors';
 import Chart from 'react-apexcharts';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { formatDate } from '../utils/format';
 import { saveAs } from 'file-saver';
-
-const PAYMENT_TYPES = [
-  { value: 'ALL', label: 'All Receipts' },
-  { value: 'MAINTENANCE', label: 'Maintenance' },
-  { value: 'CORPUS', label: 'Corpus' },
-  { value: 'MEMBERSHIP', label: 'Membership' },
-  { value: 'AMENITY_BOOKING', label: 'Amenity Booking' },
-];
-
-const TYPE_COLORS = {
-  MAINTENANCE: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
-  CORPUS: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
-  MEMBERSHIP: 'bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-400',
-  AMENITY_BOOKING: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
-};
-
-const TYPE_ICONS = {
-  MAINTENANCE: Wrench,
-  CORPUS: Landmark,
-  MEMBERSHIP: UserPlus,
-  AMENITY_BOOKING: CalendarCheck,
-};
 
 const STATUS_COLORS = {
   PAID: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400',
@@ -148,16 +127,20 @@ export default function Payments() {
   const [penaltyModal, setPenaltyModal] = useState(false);
   const [invoiceForm, setInvoiceForm] = useState({ periodMode: 'MONTHLY', month: new Date().getMonth() + 1, year: new Date().getFullYear(), periodFrom: '', periodTo: '', paymentType: 'MAINTENANCE', calculationMode: 'PER_SQFT', amountPerUnit: '', ratePerSqFt: '', dueDays: 15, dueDate: '' });
   const handleInvoiceTypeChange = (paymentType) => {
-    if (paymentType === 'MEMBERSHIP' || paymentType === 'CORPUS') {
+    const incType = incomeTypes.find(t => t.code === paymentType);
+    if (incType?.oneTime) {
       setInvoiceForm(f => ({ ...f, paymentType, periodMode: 'ONE_TIME', calculationMode: 'LUMPSUM' }));
     } else {
-      setInvoiceForm(f => ({ ...f, paymentType, periodMode: f.periodMode === 'ONE_TIME' ? 'MONTHLY' : f.periodMode, calculationMode: 'PER_SQFT' }));
+      setInvoiceForm(f => ({ ...f, paymentType, periodMode: f.periodMode === 'ONE_TIME' ? 'MONTHLY' : f.periodMode, calculationMode: paymentType === 'MAINTENANCE' ? 'PER_SQFT' : 'LUMPSUM' }));
     }
   };
   const [penaltyForm, setPenaltyForm] = useState({ annualRate: '18' });
   const toast = useToast();
-  const { config: societyConfig } = useSocietyConfig();
+  const { config: societyConfig, incomeTypes } = useSocietyConfig();
   const propertyLabel = societyConfig?.propertyLabel || 'Property';
+
+  // Build dynamic PAYMENT_TYPES tabs from context
+  const PAYMENT_TYPES = [{ value: 'ALL', label: 'All Receipts' }, ...incomeTypes.map(t => ({ value: t.code, label: t.displayName }))];
 
   const fetchData = async () => {
     try {
@@ -234,8 +217,7 @@ export default function Payments() {
     e.preventDefault();
     try {
       const isOneTime = invoiceForm.periodMode === 'ONE_TIME';
-      const isMaintenance = invoiceForm.paymentType === 'MAINTENANCE';
-      const calcMode = isMaintenance ? 'PER_SQFT' : 'LUMPSUM';
+      const calcMode = invoiceForm.calculationMode === 'PER_SQFT' ? 'PER_SQFT' : 'LUMPSUM';
       const payload = {
         paymentType: invoiceForm.paymentType,
         periodMode: invoiceForm.periodMode,
@@ -452,11 +434,9 @@ export default function Payments() {
                       </div>
                     </td>
                     <td className="px-5 py-3">
-                      {(() => { const Icon = TYPE_ICONS[p.paymentType]; return (
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${TYPE_COLORS[p.paymentType] || 'bg-gray-100 text-gray-700'}`}>
-                          {Icon && <Icon className="w-3 h-3" />}{p.paymentType.replace(/_/g, ' ')}
-                        </span>
-                      ); })()}
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${getTypeColor(p.paymentType)}`}>
+                        {p.paymentType.replace(/_/g, ' ')}
+                      </span>
                     </td>
                     <td className="px-5 py-3">
                       <span className={`inline-flex px-2 py-0.5 rounded text-[11px] font-medium ${STATUS_COLORS[p.status] || 'bg-gray-100 text-gray-700'}`}>
@@ -538,7 +518,7 @@ export default function Payments() {
                       )}
                     </>
                   )}
-                  {invoiceForm.paymentType === 'MAINTENANCE' ? (
+                  {invoiceForm.calculationMode === 'PER_SQFT' ? (
                     <div>
                       <label className="block text-[13px] font-medium text-heading mb-1">Rate Per Sq.Ft (₹)<InfoTooltip text={`Amount = Rate × ${propertyLabel} Area (sq.ft). ${propertyLabel}s without area will be skipped.`} /></label>
                       <input type="number" min="0.01" step="0.01" required value={invoiceForm.ratePerSqFt} onChange={e => setInvoiceForm({...invoiceForm, ratePerSqFt: e.target.value})} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" placeholder="e.g. 2.50" />
@@ -573,9 +553,9 @@ export default function Payments() {
                   <h2 className="text-[14px] font-semibold text-heading mb-1">Payment Type</h2>
                   <p className="text-[11px] text-muted mb-3"><InfoTooltip text={invoiceForm.paymentType === 'MAINTENANCE' ? `Maintenance is calculated as Rate Per Sq.Ft × ${propertyLabel} Area. Invoices will be generated for all occupied ${propertyLabel.toLowerCase()}s.` : `This will create PENDING invoices for all ${propertyLabel.toLowerCase()}s that have an assigned resident.`} /> Select the type of invoice to generate.</p>
                   <select value={invoiceForm.paymentType} onChange={e => handleInvoiceTypeChange(e.target.value)} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading">
-                    <option value="MAINTENANCE">Maintenance</option>
-                    <option value="CORPUS">Corpus</option>
-                    <option value="MEMBERSHIP">Membership</option>
+                    {incomeTypes.filter(t => !t.systemManaged).map(t => (
+                      <option key={t.code} value={t.code}>{t.displayName}</option>
+                    ))}
                   </select>
                   {invoiceForm.periodMode === 'ONE_TIME' && <p className="text-[11px] text-muted mt-2"><InfoTooltip text={`One-time charge — will only generate if no prior ${invoiceForm.paymentType.toLowerCase()} invoice exists for a ${propertyLabel.toLowerCase()}.`} /> One-time charge</p>}
                 </div>

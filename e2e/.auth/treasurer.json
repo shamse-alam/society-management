@@ -1,0 +1,22 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:5173",
+      "localStorage": [
+        {
+          "name": "theme",
+          "value": "light"
+        },
+        {
+          "name": "token",
+          "value": "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJlMmVfdHJlYXN1cmVyIiwicm9sZXMiOiJSRVNJREVOVCxUUkVBU1VSRVIiLCJyb2xlIjoiVFJFQVNVUkVSIiwiZmlyc3ROYW1lIjoiRTJFIiwibGFzdE5hbWUiOiJUcmVhc3VyZXIiLCJpYXQiOjE3NzY1Njg4ODYsImV4cCI6MTc3NjY1NTI4Nn0.UWsTyjoSddBLfviClnNc4EX6pygnpEskE3wLfOqj62VE9Sb_NCeuCUIPVPM0t24v-k_FYfnqkN1v1Ncz7KiQIw"
+        },
+        {
+          "name": "user",
+          "value": "{\"username\":\"e2e_treasurer\",\"firstName\":\"E2E\",\"lastName\":\"Treasurer\",\"fullName\":\"E2E Treasurer\",\"role\":\"TREASURER\",\"roles\":[\"RESIDENT\",\"TREASURER\"],\"profileImage\":null,\"designation\":null}"
+        }
+      ]
+    }
+  ]
+}

@@ -54,9 +54,9 @@ export default function GSTReport() {
   const handleFilter = () => fetchData(fromDate, toDate);
   const periodLabel = fromDate && toDate ? `${formatDateIndian(fromDate)} to ${formatDateIndian(toDate)}` : 'All Time';
 
-  // Compute GST on income (output GST) and expenses (input GST)
-  const incomeGST = data?.incomeBreakdown?.map(i => ({ ...i, ...computeGST(i.amount) })) || [];
-  const expenseGST = data?.expenseBreakdown?.map(i => ({ ...i, ...computeGST(i.amount) })) || [];
+  // Compute GST on income (output GST) and expenses (input GST) — use gstApplicable/gstIncluded flags from backend
+  const incomeGST = data?.incomeBreakdown?.filter(i => i.gstApplicable !== false).map(i => ({ ...i, ...computeGST(i.amount) })) || [];
+  const expenseGST = data?.expenseBreakdown?.filter(i => i.gstIncluded !== false).map(i => ({ ...i, ...computeGST(i.amount) })) || [];
 
   const totalOutputCGST = incomeGST.reduce((s, i) => s + i.cgst, 0);
   const totalOutputSGST = incomeGST.reduce((s, i) => s + i.sgst, 0);

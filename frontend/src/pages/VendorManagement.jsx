@@ -6,26 +6,9 @@ import { adminAPI } from '../services/api';
 import Modal from '../components/Modal';
 import { Plus, Pencil, Trash2, Search, Upload, Store, Landmark, Save } from 'lucide-react';
 import { useConfirm } from '../context/ConfirmContext';
+import { useSocietyConfig } from '../context/SocietyConfigContext';
+import { getTypeColor } from '../utils/typeColors';
 import { useNavigate } from 'react-router-dom';
-
-const VENDOR_CATEGORIES = [
-  'GARDENER', 'SECURITY', 'CLEANING', 'ELECTRICIAN', 'PLUMBER', 'PAINTER', 'CARPENTER', 'UTILITY', 'OTHER',
-];
-
-const categoryColor = (cat) => {
-  const colors = {
-    GARDENER: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400',
-    SECURITY: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
-    CLEANING: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-400',
-    ELECTRICIAN: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/15 dark:text-yellow-400',
-    PLUMBER: 'bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-400',
-    PAINTER: 'bg-pink-100 text-pink-700 dark:bg-pink-500/15 dark:text-pink-400',
-    CARPENTER: 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400',
-    UTILITY: 'bg-gray-100 text-gray-700 dark:bg-gray-500/15 dark:text-gray-400',
-    OTHER: 'bg-gray-100 text-gray-600 dark:bg-gray-500/15 dark:text-gray-400',
-  };
-  return colors[cat] || colors.OTHER;
-};
 
 function VendorAvatar({ name, src }) {
   if (src) {
@@ -40,12 +23,14 @@ function VendorAvatar({ name, src }) {
 
 export default function VendorManagement() {
   const confirm = useConfirm();
+  const { expenseTypes } = useSocietyConfig();
+  const VENDOR_CATEGORIES = expenseTypes.map(t => t.code);
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editId, setEditId] = useState(null);
   const emptyAccount = { accountHolderName: '', accountNumber: '', ifscCode: '', bankName: '', branchName: '' };
-  const [form, setForm] = useState({ name: '', category: 'GARDENER', phone: '', email: '', address: '', active: true, vendorType: 'OTHER', monthlyAmount: '', contractStartDate: '', contractEndDate: '', gstNumber: '', bankAccounts: [] });
+  const [form, setForm] = useState({ name: '', category: '', phone: '', email: '', address: '', active: true, vendorType: 'OTHER', monthlyAmount: '', contractStartDate: '', contractEndDate: '', gstNumber: '', bankAccounts: [] });
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -66,7 +51,7 @@ export default function VendorManagement() {
 
   const openAddModal = () => {
     setEditId(null);
-    setForm({ name: '', category: 'GARDENER', phone: '', email: '', address: '', active: true, vendorType: 'OTHER', monthlyAmount: '', contractStartDate: '', contractEndDate: '', gstNumber: '', bankAccounts: [] });
+    setForm({ name: '', category: '', phone: '', email: '', address: '', active: true, vendorType: 'OTHER', monthlyAmount: '', contractStartDate: '', contractEndDate: '', gstNumber: '', bankAccounts: [] });
     setLogoFile(null); setLogoPreview(null);
     setError(''); setModalOpen(true);
   };
@@ -200,7 +185,7 @@ export default function VendorManagement() {
                       </div>
                     </td>
                     <td className="px-5 py-3">
-                      <span className={`inline-flex px-2 py-0.5 rounded text-[11px] font-medium ${categoryColor(vendor.category)}`}>{vendor.category}</span>
+                      <span className={`inline-flex px-2 py-0.5 rounded text-[11px] font-medium ${getTypeColor(vendor.category)}`}>{vendor.category}</span>
                     </td>
                     <td className="px-5 py-3">
                       <span className={`inline-flex px-2 py-0.5 rounded text-[11px] font-medium ${vendor.vendorType === 'CONTRACT' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-500/15 dark:text-gray-400'}`}>{vendor.vendorType || 'OTHER'}</span>

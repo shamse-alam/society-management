@@ -63,6 +63,8 @@ roles:
         methods: ALL
       - pattern: "/api/admin/expenses/**"
         methods: ALL
+      - pattern: "/api/admin/fund-releases/**"
+        methods: ALL
       - pattern: "/api/admin/vendors/**"
         methods: [GET]
       - pattern: "/api/admin/balance-sheet"
@@ -84,6 +86,8 @@ roles:
       - pattern: "/api/accountant/**"
         methods: ALL
       - pattern: "/api/admin/expenses/**"
+        methods: ALL
+      - pattern: "/api/admin/fund-releases/**"
         methods: ALL
       - pattern: "/api/admin/vendors/**"
         methods: [GET]
@@ -111,6 +115,8 @@ roles:
         methods: ALL
       - pattern: "/api/admin/expenses/**"
         methods: ALL
+      - pattern: "/api/admin/fund-releases/**"
+        methods: ALL
       - pattern: "/api/admin/vendors/**"
         methods: ALL
       - pattern: "/api/admin/balance-sheet"
@@ -132,6 +138,8 @@ roles:
       - pattern: "/api/admin/committee"
         methods: [GET]
       - pattern: "/api/admin/balance-sheet"
+        methods: [GET]
+      - pattern: "/api/admin/fund-releases/**"
         methods: [GET]
       - pattern: "/api/admin/complaints/**"
         methods: [GET]

@@ -145,7 +145,7 @@ public class AmenityBookingService {
         // Create a PENDING invoice on confirmation — payment captured separately
         Payment payment = Payment.builder()
                 .user(booking.getUser())
-                .paymentType(PaymentType.AMENITY_BOOKING)
+                .paymentType("AMENITY_BOOKING")
                 .amount(booking.getTotalCharge())
                 .status(PaymentStatus.PENDING)
                 .description("Booking: " + booking.getAmenity().getName() + " (" + booking.getBookingDate() + " to " + booking.getBookingEndDate() + ")")

@@ -3,17 +3,27 @@ import { publicAPI } from '../services/api';
 
 const SocietyConfigContext = createContext({
   config: { societyName: 'Society Management', tagline: '', propertyLabel: 'Villa' },
+  incomeTypes: [],
+  expenseTypes: [],
   refreshConfig: () => {},
 });
 
 export function SocietyConfigProvider({ children }) {
   const [config, setConfig] = useState({ societyName: 'Society Management', tagline: '', propertyLabel: 'Villa' });
+  const [incomeTypes, setIncomeTypes] = useState([]);
+  const [expenseTypes, setExpenseTypes] = useState([]);
 
   const fetchConfig = async () => {
     try {
-      const res = await publicAPI.getSocietyConfig();
-      setConfig(res.data);
-      document.title = res.data.societyName || 'Society Management';
+      const [configRes, incomeRes, expenseRes] = await Promise.all([
+        publicAPI.getSocietyConfig(),
+        publicAPI.getIncomeTypes(),
+        publicAPI.getExpenseTypes(),
+      ]);
+      setConfig(configRes.data);
+      setIncomeTypes(incomeRes.data);
+      setExpenseTypes(expenseRes.data);
+      document.title = configRes.data.societyName || 'Society Management';
     } catch {
       // fallback to defaults
     }
@@ -22,7 +32,7 @@ export function SocietyConfigProvider({ children }) {
   useEffect(() => { fetchConfig(); }, []);
 
   return (
-    <SocietyConfigContext.Provider value={{ config, refreshConfig: fetchConfig }}>
+    <SocietyConfigContext.Provider value={{ config, incomeTypes, expenseTypes, refreshConfig: fetchConfig }}>
       {children}
     </SocietyConfigContext.Provider>
   );

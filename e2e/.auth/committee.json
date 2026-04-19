@@ -1,0 +1,22 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:5173",
+      "localStorage": [
+        {
+          "name": "theme",
+          "value": "light"
+        },
+        {
+          "name": "token",
+          "value": "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJlMmVfY29tbWl0dGVlIiwicm9sZXMiOiJSRVNJREVOVCxDT01NSVRURUVfTUVNQkVSIiwicm9sZSI6IkNPTU1JVFRFRV9NRU1CRVIiLCJmaXJzdE5hbWUiOiJFMkUiLCJsYXN0TmFtZSI6IkNvbW1pdHRlZSIsImlhdCI6MTc3NjU2ODg4NywiZXhwIjoxNzc2NjU1Mjg3fQ.u6QogoWdlCaUCfhWqlFYOdIBg3RstnPl7u85cwVtQeixY1u6bqWEoqsQOAsvhzoc2EDMHgiKuGFVbZz2wEseGQ"
+        },
+        {
+          "name": "user",
+          "value": "{\"username\":\"e2e_committee\",\"firstName\":\"E2E\",\"lastName\":\"Committee\",\"fullName\":\"E2E Committee\",\"role\":\"COMMITTEE_MEMBER\",\"roles\":[\"RESIDENT\",\"COMMITTEE_MEMBER\"],\"profileImage\":null,\"designation\":null}"
+        }
+      ]
+    }
+  ]
+}
