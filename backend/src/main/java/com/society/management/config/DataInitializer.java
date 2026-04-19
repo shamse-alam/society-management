@@ -2,13 +2,15 @@ package com.society.management.config;
 
 import com.society.management.entity.*;
 import com.society.management.repository.*;
-import jakarta.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
+
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.Statement;
 
 @Component
 public class DataInitializer implements CommandLineRunner {
@@ -17,13 +19,13 @@ public class DataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final EntityManager entityManager;
+    private final DataSource dataSource;
 
     public DataInitializer(UserRepository userRepository, PasswordEncoder passwordEncoder,
-                           EntityManager entityManager) {
+                           DataSource dataSource) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
-        this.entityManager = entityManager;
+        this.dataSource = dataSource;
     }
 
     @Override
@@ -32,15 +34,14 @@ public class DataInitializer implements CommandLineRunner {
         seedUsers();
     }
 
-    @Transactional
-    void dropStaleConstraints() {
+    private void dropStaleConstraints() {
         // payment_type was converted from enum to String — drop the old Hibernate check constraint
-        try {
-            entityManager.createNativeQuery(
-                "ALTER TABLE payments DROP CONSTRAINT IF EXISTS payments_payment_type_check"
-            ).executeUpdate();
+        try (Connection conn = dataSource.getConnection();
+             Statement stmt = conn.createStatement()) {
+            stmt.execute("ALTER TABLE payments DROP CONSTRAINT IF EXISTS payments_payment_type_check");
+            log.info("Dropped stale payments_payment_type_check constraint (or it did not exist)");
         } catch (Exception e) {
-            log.debug("Could not drop payments_payment_type_check (may not exist): {}", e.getMessage());
+            log.warn("Could not drop payments_payment_type_check: {}", e.getMessage());
         }
     }
 
