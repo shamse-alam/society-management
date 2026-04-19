@@ -263,7 +263,6 @@ export const userAPI = {
   },
   getProperties: () => api.get('/user/properties'),
 
-  makePayment: (data) => api.post('/user/payments', data),
   getMyPayments: () => api.get('/user/payments'),
   getMyPaymentsByType: (type) => api.get(`/user/payments/type/${type}`),
 

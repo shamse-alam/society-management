@@ -55,7 +55,7 @@ test.describe('Admin — Sidebar Navigation', () => {
     await adminPage.goto('/home');
     expect(await hasSidebarSection(adminPage, 'Accounts')).toBe(true);
     await expandSection(adminPage, 'Accounts');
-    for (const label of ['Income', 'Expenditure', 'Vendors', 'Receipts & Payments', 'Reserve Funds', 'GST Statement', 'Defaulter Report']) {
+    for (const label of ['Income', 'Expenditure', 'Vendors', 'Receipts & Payments', 'Reserve Funds', 'Refunds', 'GST Statement', 'Defaulter Report']) {
       expect(await hasSidebarLink(adminPage, label)).toBe(true);
     }
   });
@@ -290,15 +290,11 @@ test.describe('Secretary — Sidebar Navigation', () => {
     expect(await hasSidebarSection(secretaryPage, 'Accounts')).toBe(false);
   });
 
-  test('secretary sees Payments section (user version)', async ({ secretaryPage }) => {
+  test('secretary sees standalone My Dues link (not Accounts)', async ({ secretaryPage }) => {
     await secretaryPage.goto('/home');
-    // Secretary is !canManageAccounts, so they see user Payments
-    const paymentsBtn = secretaryPage.locator('nav button', { hasText: 'Payments' });
-    if (await paymentsBtn.count() > 0) {
-      await paymentsBtn.click();
-      await secretaryPage.waitForTimeout(300);
-      expect(await hasSidebarLink(secretaryPage, 'Maintenance')).toBe(true);
-    }
+    // Secretary is !canManageAccounts but has RESIDENT role, so they see standalone My Dues link
+    const myDuesLink = secretaryPage.locator('nav a', { hasText: 'My Dues' });
+    expect(await myDuesLink.count()).toBeGreaterThan(0);
   });
 
   test('secretary sees Society section (canManageSociety)', async ({ secretaryPage }) => {
@@ -538,16 +534,12 @@ test.describe('Resident — Sidebar Navigation', () => {
     await expect(residentPage).toHaveURL(/\/home/);
   });
 
-  test('resident sees Payments (user version) not Accounts', async ({ residentPage }) => {
+  test('resident sees standalone My Dues link, not Accounts', async ({ residentPage }) => {
     await residentPage.goto('/home');
     expect(await hasSidebarSection(residentPage, 'Accounts')).toBe(false);
-    const paymentsBtn = residentPage.locator('nav button', { hasText: 'Payments' });
-    expect(await paymentsBtn.count()).toBeGreaterThan(0);
-    await paymentsBtn.click();
-    await residentPage.waitForTimeout(300);
-    expect(await hasSidebarLink(residentPage, 'Maintenance')).toBe(true);
-    expect(await hasSidebarLink(residentPage, 'Membership')).toBe(true);
-    expect(await hasSidebarLink(residentPage, 'Corpus Fund')).toBe(true);
+    const duesLink = residentPage.locator('nav a', { hasText: 'My Dues' });
+    expect(await duesLink.count()).toBeGreaterThan(0);
+    await expect(duesLink.first()).toHaveAttribute('href', '/my-dues');
   });
 
   test('resident does NOT see Society section', async ({ residentPage }) => {
@@ -589,12 +581,9 @@ test.describe('Resident — Sidebar Navigation', () => {
   });
 
   test('resident can navigate to all visible pages', async ({ residentPage }) => {
-    // Payments
+    // My Dues (standalone link for resident)
     await residentPage.goto('/home');
-    const paymentsBtn = residentPage.locator('nav button', { hasText: 'Payments' });
-    await paymentsBtn.click();
-    await residentPage.waitForTimeout(300);
-    await navigateViaMenu(residentPage, 'Maintenance', '/pay-maintenance');
+    await navigateViaMenu(residentPage, 'My Dues', '/my-dues');
 
     // Community
     await residentPage.goto('/home');

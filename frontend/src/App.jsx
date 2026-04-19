@@ -41,9 +41,7 @@ import Events from './pages/Events';
 import MoveRequests from './pages/MoveRequests';
 import MyMoveRequests from './pages/MyMoveRequests';
 import SocietySettings from './pages/SocietySettings';
-import PayMaintenance from './pages/PayMaintenance';
-import MembershipPayment from './pages/MembershipPayment';
-import CorpusPayment from './pages/CorpusPayment';
+import MyDues from './pages/MyDues';
 import FundReleases from './pages/FundReleases';
 import Refunds from './pages/Refunds';
 import { ModalProvider } from './context/ModalContext';
@@ -133,10 +131,13 @@ function AppRoutes() {
       <Route path="/society-settings" element={<ProtectedRoute adminOnly><SocietySettings /></ProtectedRoute>} />
       {/* Safety */}
       <Route path="/emergency" element={<ProtectedRoute><EmergencyContacts /></ProtectedRoute>} />
-      {/* Payments (all users) */}
-      <Route path="/pay-maintenance" element={<ProtectedRoute><PayMaintenance /></ProtectedRoute>} />
-      <Route path="/pay-membership" element={<ProtectedRoute><MembershipPayment /></ProtectedRoute>} />
-      <Route path="/pay-corpus" element={<ProtectedRoute><CorpusPayment /></ProtectedRoute>} />
+      {/* My Dues (resident view of invoices & payment history) */}
+      <Route path="/my-dues" element={<ProtectedRoute><MyDues /></ProtectedRoute>} />
+      {/* Legacy redirects */}
+      <Route path="/my-payments" element={<Navigate to="/my-dues" replace />} />
+      <Route path="/pay-maintenance" element={<Navigate to="/my-dues" replace />} />
+      <Route path="/pay-membership" element={<Navigate to="/my-dues" replace />} />
+      <Route path="/pay-corpus" element={<Navigate to="/my-dues" replace />} />
       {/* Settings (all users) */}
       <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
 

@@ -81,7 +81,7 @@ test.describe('Visitor Approval Workflows (Resident)', () => {
     const preRes = await residentAPI.post('/user/visitors/pre-approve', {
       visitorName: 'E2E_Cancel Test', visitorPhone: '+91-9888000099',
       visitorType: 'GUEST', purpose: 'Will cancel',
-      expectedAt: '2026-05-01T10:00:00',
+      expectedAt: '2026-05-01T10:00:00', validUntil: '2026-05-01T18:00:00',
     });
     expect(preRes.status).toBe(200);
 

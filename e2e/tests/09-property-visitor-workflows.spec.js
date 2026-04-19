@@ -13,7 +13,7 @@ test.describe('Visitor Management', () => {
     const res = await residentAPI.post('/user/visitors/pre-approve', {
       visitorName: 'E2E_John Friend', visitorPhone: '+91-9888000001',
       visitorType: 'GUEST', purpose: 'Personal visit',
-      expectedAt: '2026-04-25T10:00:00',
+      expectedAt: '2026-04-25T10:00:00', validUntil: '2026-04-25T18:00:00',
     });
     expect(res.status).toBe(200);
   });
@@ -465,21 +465,18 @@ test.describe('Profile & Settings', () => {
 // PAYMENT PAGES (RESIDENT)
 // ─────────────────────────────────────────────
 test.describe('Resident Payment Pages', () => {
-  test('pay maintenance page renders', async ({ residentPage }) => {
+  test('unified payments page renders', async ({ residentPage }) => {
+    await residentPage.goto('/my-dues');
+    await expect(residentPage).toHaveURL(/\/my-dues/);
+    await residentPage.waitForLoadState('domcontentloaded');
+  });
+
+  test('legacy payment routes redirect to unified page', async ({ residentPage }) => {
     await residentPage.goto('/pay-maintenance');
-    await expect(residentPage).toHaveURL(/\/pay-maintenance/);
-    await residentPage.waitForLoadState('domcontentloaded');
-  });
-
-  test('pay membership page renders', async ({ residentPage }) => {
+    await expect(residentPage).toHaveURL(/\/my-dues/);
     await residentPage.goto('/pay-membership');
-    await expect(residentPage).toHaveURL(/\/pay-membership/);
-    await residentPage.waitForLoadState('domcontentloaded');
-  });
-
-  test('pay corpus page renders', async ({ residentPage }) => {
+    await expect(residentPage).toHaveURL(/\/my-dues/);
     await residentPage.goto('/pay-corpus');
-    await expect(residentPage).toHaveURL(/\/pay-corpus/);
-    await residentPage.waitForLoadState('domcontentloaded');
+    await expect(residentPage).toHaveURL(/\/my-dues/);
   });
 });

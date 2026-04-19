@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { Building2, Users, LayoutDashboard, LogOut, Menu, CreditCard, CalendarDays, ClipboardList, ChevronDown, Plus, Home, FileBarChart, Wallet, Receipt, Store, Sun, Moon, FileText, Bell, Search, X, Settings, Megaphone, MessageSquare, BarChart3, Shield, UserPlus, UserCheck, Car, ParkingSquare, FolderOpen, MessageCircle, Calendar, Truck, Cog, ArrowLeft, Landmark, IndianRupee, LifeBuoy, Lock, RotateCcw } from 'lucide-react';
+import { Building2, Users, LayoutDashboard, LogOut, Menu, CreditCard, CalendarDays, ClipboardList, ChevronDown, Plus, Home, FileBarChart, Wallet, Receipt, Store, Sun, Moon, FileText, Bell, Search, X, Settings, Megaphone, MessageSquare, BarChart3, Shield, UserPlus, UserCheck, Car, ParkingSquare, FolderOpen, MessageCircle, Calendar, Truck, Cog, ArrowLeft, IndianRupee, LifeBuoy, Lock, RotateCcw } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import UserAvatar from './UserAvatar';
 import NotificationDropdown from './NotificationDropdown';
@@ -79,9 +79,6 @@ export default function Layout({ children }) {
   const [accountsOpen, setAccountsOpen] = useState(
     p === '/payments' || p === '/expenses' || p === '/vendors' || p.startsWith('/vendors/') || p === '/balance-sheet' || p === '/gst-report' || p === '/defaulter-report' || p === '/fund-releases' || p === '/refunds'
   );
-  const [userPaymentsOpen, setUserPaymentsOpen] = useState(
-    p === '/pay-maintenance' || p === '/pay-membership' || p === '/pay-corpus'
-  );
   const [societyOpen, setSocietyOpen] = useState(
     p === '/users' || p === '/properties' || p === '/household' || p === '/vehicles' || p === '/parking' || p === '/move-requests' || p.startsWith('/users/')
   );
@@ -104,7 +101,6 @@ export default function Layout({ children }) {
   const handleLogout = () => { logout(); navigate('/login'); };
   const isActive = (path) => p === path;
   const isAccountsSection = p === '/payments' || p === '/expenses' || p === '/vendors' || p.startsWith('/vendors/') || p === '/balance-sheet' || p === '/gst-report' || p === '/defaulter-report' || p === '/fund-releases' || p === '/refunds';
-  const isUserPaymentsSection = p === '/pay-maintenance' || p === '/pay-membership' || p === '/pay-corpus';
   const isSocietySection = p === '/users' || p === '/properties' || p === '/household' || p === '/vehicles' || p === '/parking' || p === '/move-requests' || p.startsWith('/users/');
   const isCommunitySection = p === '/notices' || p === '/polls' || p === '/emergency' || p === '/documents' || p.startsWith('/forum') || p === '/events';
   const isHelpdeskSection = p === '/complaints' || p === '/complaint-management';
@@ -128,11 +124,6 @@ export default function Layout({ children }) {
     { path: '/defaulter-report', label: 'Defaulter Report', icon: FileBarChart },
   ];
 
-  const userPaymentSubItems = [
-    { path: '/pay-maintenance', label: 'Maintenance', icon: CreditCard },
-    { path: '/pay-membership', label: 'Membership', icon: UserCheck },
-    { path: '/pay-corpus', label: 'Corpus Fund', icon: Landmark },
-  ];
 
   const societySubItems = [
     { path: '/users', label: 'Members', icon: Users },
@@ -245,26 +236,12 @@ export default function Layout({ children }) {
               </>
             )}
 
-            {/* Payments (ADMIN sees all, or any RESIDENT) */}
-            {(isAdmin || hasRole('RESIDENT')) && (
-              <>
-                {sectionLabel('Payments')}
-                <button onClick={() => setUserPaymentsOpen(!userPaymentsOpen)} className={parentBtnClass(isUserPaymentsSection)}>
-                  <IndianRupee className="w-[20px] h-[20px] shrink-0" />
-                  Payments
-                  <ChevronDown className={`w-4 h-4 ml-auto transition-transform duration-200 ${userPaymentsOpen ? 'rotate-180' : ''}`} />
-                </button>
-                {userPaymentsOpen && (
-                  <div className="ml-5 pl-3 border-l border-border space-y-0.5">
-                    {userPaymentSubItems.map((item) => (
-                      <Link key={item.path} to={item.path} onClick={() => setSidebarOpen(false)} className={subLinkClass(isActive(item.path))}>
-                        <item.icon className="w-4 h-4 shrink-0" />
-                        {item.label}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </>
+            {/* My Dues — standalone for residents without accounts access */}
+            {!canManageAccounts && hasRole('RESIDENT') && (
+              <Link to="/my-dues" onClick={() => setSidebarOpen(false)} className={navLinkClass(isActive('/my-dues'))}>
+                <Receipt className="w-[20px] h-[20px] shrink-0" />
+                My Dues
+              </Link>
             )}
 
             {/* Society — Admin, President, Secretary */}

@@ -136,7 +136,7 @@ test.describe('Resident — Visitor Pre-Approval', () => {
   test('resident can pre-approve a visitor via API', async ({ residentAPI }) => {
     const res = await residentAPI.post('/user/visitors/pre-approve', {
       visitorName: 'E2E_Test Visitor', visitorPhone: '+91-9400000001',
-      purpose: 'E2E Testing', expectedDate: '2026-06-01',
+      purpose: 'E2E Testing', expectedDate: '2026-06-01', validUntil: '2026-06-01T18:00:00',
     });
     // 200 success or 400 if duplicate
     expect([200, 400]).toContain(res.status);
