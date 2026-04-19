@@ -18,6 +18,7 @@ import com.society.management.service.EventService;
 import com.society.management.service.ForumService;
 import com.society.management.service.MoveService;
 import com.society.management.service.ParkingService;
+import com.society.management.service.PaymentRefundService;
 import com.society.management.service.PollService;
 import com.society.management.service.NoticeService;
 import com.society.management.service.UserService;
@@ -50,6 +51,7 @@ public class UserController {
     private final ForumService forumService;
     private final EventService eventService;
     private final MoveService moveService;
+    private final PaymentRefundService paymentRefundService;
 
     public UserController(UserRepository userRepository, UserService userService,
                           PropertyService propertyService, PasswordEncoder passwordEncoder,
@@ -61,7 +63,8 @@ public class UserController {
                           DocumentService documentService,
                           ForumService forumService,
                           EventService eventService,
-                          MoveService moveService) {
+                          MoveService moveService,
+                          PaymentRefundService paymentRefundService) {
         this.userRepository = userRepository;
         this.userService = userService;
         this.propertyService = propertyService;
@@ -77,6 +80,7 @@ public class UserController {
         this.forumService = forumService;
         this.eventService = eventService;
         this.moveService = moveService;
+        this.paymentRefundService = paymentRefundService;
     }
 
     @GetMapping("/profile")
@@ -397,5 +401,18 @@ public class UserController {
     public ResponseEntity<MoveRequestResponse> createMoveRequest(@RequestBody MoveRequestDto request,
                                                                    @AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(moveService.createRequest(request, userDetails.getUsername()));
+    }
+
+    // ---- Refund Requests ----
+
+    @GetMapping("/refunds")
+    public ResponseEntity<List<PaymentRefundResponse>> getMyRefunds(@AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(paymentRefundService.getMyRefunds(userDetails.getUsername()));
+    }
+
+    @PostMapping("/refunds")
+    public ResponseEntity<PaymentRefundResponse> requestRefund(@AuthenticationPrincipal UserDetails userDetails,
+                                                                @Valid @RequestBody PaymentRefundRequest request) {
+        return ResponseEntity.ok(paymentRefundService.createResidentRefundRequest(request, userDetails.getUsername()));
     }
 }

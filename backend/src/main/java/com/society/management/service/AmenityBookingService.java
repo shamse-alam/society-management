@@ -17,6 +17,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -27,15 +28,18 @@ public class AmenityBookingService {
     private final AmenityRepository amenityRepository;
     private final UserRepository userRepository;
     private final PaymentRepository paymentRepository;
+    private final PaymentRefundService paymentRefundService;
 
     public AmenityBookingService(AmenityBookingRepository bookingRepository,
                                   AmenityRepository amenityRepository,
                                   UserRepository userRepository,
-                                  PaymentRepository paymentRepository) {
+                                  PaymentRepository paymentRepository,
+                                  PaymentRefundService paymentRefundService) {
         this.bookingRepository = bookingRepository;
         this.amenityRepository = amenityRepository;
         this.userRepository = userRepository;
         this.paymentRepository = paymentRepository;
+        this.paymentRefundService = paymentRefundService;
     }
 
     public List<AmenityResponse> getAllAmenities() {
@@ -159,15 +163,23 @@ public class AmenityBookingService {
     }
 
     @Transactional
-    public BookingResponse cancelBooking(Long bookingId) {
+    public BookingResponse cancelBooking(Long bookingId, String username) {
         AmenityBooking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
 
         booking.setStatus(BookingStatus.CANCELLED);
         booking = bookingRepository.save(booking);
 
-        // Delete the linked payment
-        paymentRepository.findByBookingId(bookingId).ifPresent(paymentRepository::delete);
+        // If the linked payment is PAID, auto-create a refund request instead of deleting
+        Optional<Payment> linkedPayment = paymentRepository.findByBookingId(bookingId);
+        if (linkedPayment.isPresent()) {
+            Payment payment = linkedPayment.get();
+            if (payment.getStatus() == PaymentStatus.PAID) {
+                paymentRefundService.createAutoRefundForBookingCancellation(payment, username);
+            } else {
+                paymentRepository.delete(payment);
+            }
+        }
 
         return BookingResponse.from(booking);
     }
@@ -189,7 +201,17 @@ public class AmenityBookingService {
         booking.setStatus(BookingStatus.CANCELLED);
         booking = bookingRepository.save(booking);
 
-        paymentRepository.findByBookingId(bookingId).ifPresent(paymentRepository::delete);
+        // If the linked payment is PAID, auto-create a refund request instead of deleting
+        Optional<Payment> linkedPayment = paymentRepository.findByBookingId(bookingId);
+        if (linkedPayment.isPresent()) {
+            Payment payment = linkedPayment.get();
+            if (payment.getStatus() == PaymentStatus.PAID) {
+                paymentRefundService.createAutoRefundForBookingCancellation(payment, username);
+            } else {
+                // PENDING payment — just delete it
+                paymentRepository.delete(payment);
+            }
+        }
 
         return BookingResponse.from(booking);
     }

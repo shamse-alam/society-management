@@ -67,6 +67,7 @@ export default function Layout({ children }) {
   const { user, logout, isAdmin, isGuard, hasRole } = useAuth();
   const canManageAccounts = isAdmin || hasRole('ACCOUNTANT') || hasRole('TREASURER') || hasRole('PRESIDENT');
   const canManageSociety = isAdmin || hasRole('PRESIDENT') || hasRole('SECRETARY');
+  const canApproveMoves = canManageSociety || hasRole('TREASURER');
   const hasNonGuardRole = user?.roles?.some(r => r !== 'GUARD') || false;
   const { dark, toggle } = useTheme();
   const { config: societyConfig } = useSocietyConfig();
@@ -264,6 +265,14 @@ export default function Layout({ children }) {
                   </div>
                 )}
               </>
+            )}
+
+            {/* Move In/Out — standalone for roles that can approve but don't see Society section */}
+            {!canManageSociety && canApproveMoves && (
+              <Link to="/move-requests" onClick={() => setSidebarOpen(false)} className={navLinkClass(isActive('/move-requests'))}>
+                <Truck className="w-[20px] h-[20px] shrink-0" />
+                Move In/Out
+              </Link>
             )}
 
             {/* Community (all non-guard-only users) */}

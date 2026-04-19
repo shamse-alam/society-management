@@ -265,8 +265,9 @@ public class AdminController {
     }
 
     @PutMapping("/bookings/{id}/cancel")
-    public ResponseEntity<BookingResponse> cancelBookingAdmin(@PathVariable Long id) {
-        return ResponseEntity.ok(bookingService.cancelBooking(id));
+    public ResponseEntity<BookingResponse> cancelBookingAdmin(@PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(bookingService.cancelBooking(id, userDetails.getUsername()));
     }
 
     // ---- Expenses ----

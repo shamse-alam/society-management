@@ -462,6 +462,54 @@ test.describe('Profile & Settings', () => {
 });
 
 // ─────────────────────────────────────────────
+// RESIDENT REFUND REQUESTS
+// ─────────────────────────────────────────────
+test.describe('Resident Refund Requests', () => {
+  test('resident can view own refunds', async ({ residentAPI }) => {
+    const res = await residentAPI.get('/user/refunds');
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.data)).toBe(true);
+  });
+
+  test('resident can request a refund on a paid payment', async ({ residentAPI }) => {
+    const { data: payments } = await residentAPI.get('/user/payments');
+    const paid = payments.find(p => p.status === 'PAID');
+    if (!paid) return; // no paid payments to test against
+
+    const res = await residentAPI.post('/user/refunds', {
+      paymentId: paid.id, amount: 1, reason: 'E2E Test refund — overpayment',
+    });
+    // 200 success or 400 if refund already exists
+    expect([200, 400]).toContain(res.status);
+  });
+
+  test('admin can view all refunds', async ({ adminAPI }) => {
+    const res = await adminAPI.get('/admin/refunds');
+    expect(res.status).toBe(200);
+  });
+});
+
+// ─────────────────────────────────────────────
+// MOVE REQUEST APPROVAL ROLES
+// ─────────────────────────────────────────────
+test.describe('Move Request Approval Roles', () => {
+  test('treasurer can view move requests', async ({ treasurerAPI }) => {
+    const res = await treasurerAPI.get('/admin/move-requests');
+    expect(res.status).toBe(200);
+  });
+
+  test('president can view move requests', async ({ presidentAPI }) => {
+    const res = await presidentAPI.get('/admin/move-requests');
+    expect(res.status).toBe(200);
+  });
+
+  test('secretary can view move requests', async ({ secretaryAPI }) => {
+    const res = await secretaryAPI.get('/admin/move-requests');
+    expect(res.status).toBe(200);
+  });
+});
+
+// ─────────────────────────────────────────────
 // PAYMENT PAGES (RESIDENT)
 // ─────────────────────────────────────────────
 test.describe('Resident Payment Pages', () => {

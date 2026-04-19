@@ -117,7 +117,7 @@ roles:
         methods: ALL
 
   TREASURER:
-    description: "Society treasurer — financial oversight, can approve expenses"
+    description: "Society treasurer — financial oversight, can approve expenses and move requests"
     permissions:
       - pattern: "/api/accountant/**"
         methods: ALL
@@ -137,6 +137,8 @@ roles:
         methods: [GET]
       - pattern: "/api/admin/committee"
         methods: [GET]
+      - pattern: "/api/admin/move-requests/**"
+        methods: ALL
       - pattern: "/api/user/**"
         methods: ALL
       - pattern: "/api/notifications/**"

@@ -334,6 +334,9 @@ export const userAPI = {
   createBooking: (data) => api.post('/user/bookings', data),
   getMyBookings: () => api.get('/user/bookings'),
   cancelBooking: (id) => api.put(`/user/bookings/${id}/cancel`),
+
+  getMyRefunds: () => api.get('/user/refunds'),
+  requestRefund: (data) => api.post('/user/refunds', data),
 };
 
 export const notificationAPI = {

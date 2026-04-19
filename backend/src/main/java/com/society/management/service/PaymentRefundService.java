@@ -225,4 +225,95 @@ public class PaymentRefundService {
         return refundRepository.findByStatusAndProcessedAtBetween(PaymentRefundStatus.PROCESSED, from, to)
                 .stream().map(PaymentRefundResponse::from).collect(Collectors.toList());
     }
+
+    public List<PaymentRefundResponse> getMyRefunds(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return refundRepository.findByUserIdOrderByCreatedAtDesc(user.getId())
+                .stream().map(PaymentRefundResponse::from).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public PaymentRefundResponse createResidentRefundRequest(PaymentRefundRequest request, String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Payment payment = paymentRepository.findById(request.getPaymentId())
+                .orElseThrow(() -> new RuntimeException("Payment not found"));
+
+        // Resident can only request refund on their own payments
+        if (!payment.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("You can only request refunds for your own payments");
+        }
+
+        if (payment.getStatus() != PaymentStatus.PAID) {
+            throw new RuntimeException("Only PAID payments can be refunded");
+        }
+
+        Optional<PaymentRefund> existing = refundRepository.findByPaymentIdAndStatusNot(
+                payment.getId(), PaymentRefundStatus.REJECTED);
+        if (existing.isPresent()) {
+            throw new RuntimeException("A refund request already exists for this payment (status: "
+                    + existing.get().getStatus() + ")");
+        }
+
+        if (request.getAmount().compareTo(payment.getAmount()) > 0) {
+            throw new RuntimeException("Refund amount cannot exceed original payment amount (" + payment.getAmount() + ")");
+        }
+
+        PaymentRefund refund = PaymentRefund.builder()
+                .payment(payment)
+                .user(user)
+                .amount(request.getAmount())
+                .reason(request.getReason())
+                .notes(request.getNotes())
+                .status(PaymentRefundStatus.PENDING)
+                .refundNumber(generateRefundNumber())
+                .requestedBy(username)
+                .build();
+
+        refund = refundRepository.save(refund);
+
+        notificationService.createNotificationForAdmins(
+                "Refund Request from Resident",
+                user.getFullName() + " (" + user.getUnitNumber() + ") requested a refund of Rs. " + request.getAmount()
+                        + " for " + payment.getPaymentType() + " payment (Receipt: " + payment.getReceiptNumber() + ")",
+                NotificationType.PAYMENT_REFUND,
+                refund.getId()
+        );
+
+        return PaymentRefundResponse.from(refund);
+    }
+
+    @Transactional
+    public PaymentRefundResponse createAutoRefundForBookingCancellation(Payment payment, String username) {
+        // Check no existing non-REJECTED refund on this payment
+        Optional<PaymentRefund> existing = refundRepository.findByPaymentIdAndStatusNot(
+                payment.getId(), PaymentRefundStatus.REJECTED);
+        if (existing.isPresent()) {
+            return PaymentRefundResponse.from(existing.get());
+        }
+
+        PaymentRefund refund = PaymentRefund.builder()
+                .payment(payment)
+                .user(payment.getUser())
+                .amount(payment.getAmount())
+                .reason("Automatic refund — amenity booking cancelled")
+                .status(PaymentRefundStatus.PENDING)
+                .refundNumber(generateRefundNumber())
+                .requestedBy(username)
+                .build();
+
+        refund = refundRepository.save(refund);
+
+        notificationService.createNotificationForAdmins(
+                "Auto Refund Request — Booking Cancelled",
+                payment.getUser().getFullName() + " cancelled a booking. Refund of Rs. " + payment.getAmount()
+                        + " requested automatically (Receipt: " + payment.getReceiptNumber() + ")",
+                NotificationType.PAYMENT_REFUND,
+                refund.getId()
+        );
+
+        return PaymentRefundResponse.from(refund);
+    }
 }

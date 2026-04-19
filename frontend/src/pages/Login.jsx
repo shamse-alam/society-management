@@ -162,7 +162,7 @@ export default function Login() {
             </button>
           </form>
 
-          <p className="text-center text-[12px] text-muted mt-8">Default login: admin / welcome</p>
+          <p className="text-center text-[12px] text-muted mt-8">Contact your society admin if you need access</p>
         </div>
       </div>
     </div>
