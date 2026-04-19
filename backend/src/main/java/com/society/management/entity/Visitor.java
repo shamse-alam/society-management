@@ -24,6 +24,8 @@ public class Visitor extends BaseEntity {
     @Builder.Default
     private VisitorType visitorType = VisitorType.GUEST;
 
+    private String email;
+
     private String vehicleNumber;
 
     @Column(length = 500)

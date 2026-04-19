@@ -2,7 +2,7 @@ import { ButtonSpinner } from '../components/Spinner';
 import { TableSkeleton } from '../components/Skeleton';
 import { useState, useEffect, useCallback } from 'react';
 import { adminAPI } from '../services/api';
-import { IndianRupee, FileDown, FileSpreadsheet, Filter } from 'lucide-react';
+import { IndianRupee, FileDown, FileSpreadsheet, Filter, RotateCcw } from 'lucide-react';
 import { useSocietyConfig } from '../context/SocietyConfigContext';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -58,12 +58,20 @@ export default function GSTReport() {
   const incomeGST = data?.incomeBreakdown?.filter(i => i.gstApplicable !== false).map(i => ({ ...i, ...computeGST(i.amount) })) || [];
   const expenseGST = data?.expenseBreakdown?.filter(i => i.gstIncluded !== false).map(i => ({ ...i, ...computeGST(i.amount) })) || [];
 
+  // Credit notes from refunds — reduce output tax
+  const refundGST = data?.refundBreakdown?.filter(i => i.gstApplicable !== false).map(i => ({ ...i, ...computeGST(i.amount) })) || [];
+  const totalRefundCGST = refundGST.reduce((s, i) => s + i.cgst, 0);
+  const totalRefundSGST = refundGST.reduce((s, i) => s + i.sgst, 0);
+
   const totalOutputCGST = incomeGST.reduce((s, i) => s + i.cgst, 0);
   const totalOutputSGST = incomeGST.reduce((s, i) => s + i.sgst, 0);
   const totalInputCGST = expenseGST.reduce((s, i) => s + i.cgst, 0);
   const totalInputSGST = expenseGST.reduce((s, i) => s + i.sgst, 0);
-  const netCGST = totalOutputCGST - totalInputCGST;
-  const netSGST = totalOutputSGST - totalInputSGST;
+  // Net output = output - credit notes (refunds)
+  const effectiveOutputCGST = totalOutputCGST - totalRefundCGST;
+  const effectiveOutputSGST = totalOutputSGST - totalRefundSGST;
+  const netCGST = effectiveOutputCGST - totalInputCGST;
+  const netSGST = effectiveOutputSGST - totalInputSGST;
   const netGST = netCGST + netSGST;
 
   const exportPDF = () => {
@@ -98,6 +106,24 @@ export default function GSTReport() {
     });
     y = doc.lastAutoTable.finalY + 8;
 
+    if (refundGST.length > 0) {
+      doc.setFontSize(11); doc.setFont(undefined, 'bold');
+      doc.text('Credit Notes (Refunds / Reversals) — Section 34, CGST Act', 14, y); y += 2;
+      autoTable(doc, {
+        startY: y,
+        head: [['Particulars', 'Credit Note Value', 'Taxable Value', `CGST @${GST_RATE / 2}%`, `SGST @${GST_RATE / 2}%`, 'Total Tax Reversal']],
+        body: [
+          ...refundGST.map(i => [i.type.replace(/_/g, ' '), fmt(i.amount), fmt(i.base), fmt(i.cgst), fmt(i.sgst), fmt(i.cgst + i.sgst)]),
+          [{ content: 'Total Credit Notes', styles: { fontStyle: 'bold' } }, fmt(data.totalRefunds), fmt(refundGST.reduce((s, i) => s + i.base, 0)), fmt(totalRefundCGST), fmt(totalRefundSGST), fmt(totalRefundCGST + totalRefundSGST)],
+        ],
+        theme: 'grid', styles: { fontSize: 9, cellPadding: 2 },
+        headStyles: { fillColor: [249, 115, 22], textColor: 255, fontStyle: 'bold' },
+        columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' } },
+        margin: { left: 14, right: 14 },
+      });
+      y = doc.lastAutoTable.finalY + 8;
+    }
+
     doc.setFontSize(11); doc.setFont(undefined, 'bold');
     doc.text('Input Tax Credit (On Inward Supplies)', 14, y); y += 2;
     autoTable(doc, {
@@ -121,6 +147,8 @@ export default function GSTReport() {
       head: [['', `CGST @${GST_RATE / 2}%`, `SGST @${GST_RATE / 2}%`, 'Total']],
       body: [
         ['Output Tax', fmt(totalOutputCGST), fmt(totalOutputSGST), fmt(totalOutputCGST + totalOutputSGST)],
+        ...(refundGST.length > 0 ? [['Less: Credit Notes (Refunds)', fmt(totalRefundCGST), fmt(totalRefundSGST), fmt(totalRefundCGST + totalRefundSGST)]] : []),
+        ...(refundGST.length > 0 ? [['Net Output Tax', fmt(effectiveOutputCGST), fmt(effectiveOutputSGST), fmt(effectiveOutputCGST + effectiveOutputSGST)]] : []),
         ['Less: Input Tax Credit', fmt(totalInputCGST), fmt(totalInputSGST), fmt(totalInputCGST + totalInputSGST)],
         [{ content: 'Net Payable / (Refundable)', styles: { fontStyle: 'bold' } }, { content: fmt(netCGST), styles: { fontStyle: 'bold' } }, { content: fmt(netSGST), styles: { fontStyle: 'bold' } }, { content: fmt(netGST), styles: { fontStyle: 'bold' } }],
       ],
@@ -148,6 +176,13 @@ export default function GSTReport() {
       ...incomeGST.map(i => [i.type.replace(/_/g, ' '), Number(i.amount), i.base, i.cgst, i.sgst, i.cgst + i.sgst]),
       ['Total Output Tax', Number(data.totalIncome), incomeGST.reduce((s, i) => s + i.base, 0), totalOutputCGST, totalOutputSGST, totalOutputCGST + totalOutputSGST],
       [],
+      ...(refundGST.length > 0 ? [
+        ['CREDIT NOTES (Refunds / Reversals)'],
+        ['Particulars', 'Credit Note Value', 'Taxable Value', `CGST @${GST_RATE / 2}%`, `SGST @${GST_RATE / 2}%`, 'Total Tax Reversal'],
+        ...refundGST.map(i => [i.type.replace(/_/g, ' '), Number(i.amount), i.base, i.cgst, i.sgst, i.cgst + i.sgst]),
+        ['Total Credit Notes', Number(data.totalRefunds), refundGST.reduce((s, i) => s + i.base, 0), totalRefundCGST, totalRefundSGST, totalRefundCGST + totalRefundSGST],
+        [],
+      ] : []),
       ['INPUT TAX CREDIT (On Inward Supplies)'],
       ['Particulars', 'Invoice Value (Incl. Tax)', 'Taxable Value', `CGST @${GST_RATE / 2}%`, `SGST @${GST_RATE / 2}%`, 'Total Tax'],
       ...expenseGST.map(i => [i.category.replace(/_/g, ' '), Number(i.amount), i.base, i.cgst, i.sgst, i.cgst + i.sgst]),
@@ -156,6 +191,8 @@ export default function GSTReport() {
       ['NET TAX LIABILITY'],
       ['', `CGST @${GST_RATE / 2}%`, `SGST @${GST_RATE / 2}%`, 'Total'],
       ['Output Tax', totalOutputCGST, totalOutputSGST, totalOutputCGST + totalOutputSGST],
+      ...(refundGST.length > 0 ? [['Less: Credit Notes (Refunds)', totalRefundCGST, totalRefundSGST, totalRefundCGST + totalRefundSGST]] : []),
+      ...(refundGST.length > 0 ? [['Net Output Tax', effectiveOutputCGST, effectiveOutputSGST, effectiveOutputCGST + effectiveOutputSGST]] : []),
       ['Less: Input Tax Credit', totalInputCGST, totalInputSGST, totalInputCGST + totalInputSGST],
       ['Net Payable / (Refundable)', netCGST, netSGST, netGST],
     ];
@@ -191,11 +228,18 @@ export default function GSTReport() {
       {loading ? <TableSkeleton /> : data && (
         <>
           {/* Tax Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+          <div className={`grid grid-cols-1 sm:grid-cols-${refundGST.length > 0 ? '5' : '4'} gap-4 mb-6`}>
             <div className="bg-card rounded-lg border border-border p-5">
-              <p className="text-[11px] font-medium text-muted uppercase tracking-wider">Output Tax Liability</p>
-              <p className="text-[22px] font-bold text-green-600 dark:text-green-400 mt-1"><IndianRupee className="w-5 h-5 inline" /> {fmt(totalOutputCGST + totalOutputSGST)}</p>
+              <p className="text-[11px] font-medium text-muted uppercase tracking-wider">{refundGST.length > 0 ? 'Net Output Tax' : 'Output Tax Liability'}</p>
+              <p className="text-[22px] font-bold text-green-600 dark:text-green-400 mt-1"><IndianRupee className="w-5 h-5 inline" /> {fmt(effectiveOutputCGST + effectiveOutputSGST)}</p>
+              {refundGST.length > 0 && <p className="text-[11px] text-muted mt-0.5">After credit notes</p>}
             </div>
+            {refundGST.length > 0 && (
+              <div className="bg-card rounded-lg border border-border p-5">
+                <p className="text-[11px] font-medium text-muted uppercase tracking-wider flex items-center gap-1"><RotateCcw className="w-3 h-3" /> Credit Notes (Refunds)</p>
+                <p className="text-[22px] font-bold text-orange-600 dark:text-orange-400 mt-1"><IndianRupee className="w-5 h-5 inline" /> {fmt(totalRefundCGST + totalRefundSGST)}</p>
+              </div>
+            )}
             <div className="bg-card rounded-lg border border-border p-5">
               <p className="text-[11px] font-medium text-muted uppercase tracking-wider">Input Tax Credit (ITC)</p>
               <p className="text-[22px] font-bold text-red-600 dark:text-red-400 mt-1"><IndianRupee className="w-5 h-5 inline" /> {fmt(totalInputCGST + totalInputSGST)}</p>
@@ -250,6 +294,54 @@ export default function GSTReport() {
               </table>
             </div>
           </div>
+
+          {/* Credit Notes (Refunds) Table */}
+          {refundGST.length > 0 && (
+            <div className="bg-card rounded-lg border border-border overflow-hidden mb-6">
+              <div className="px-5 py-3 bg-orange-50 dark:bg-orange-500/10 border-b border-border">
+                <h2 className="text-[13px] font-semibold text-orange-800 dark:text-orange-400 flex items-center gap-2">
+                  <RotateCcw className="w-4 h-4" /> Credit Notes — Refunds / Reversals (Section 34, CGST Act)
+                </h2>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr>
+                      <th className="text-left px-5 py-3 text-[11px] font-semibold text-muted uppercase tracking-wider bg-card-alt">Particulars</th>
+                      <th className="text-right px-5 py-3 text-[11px] font-semibold text-muted uppercase tracking-wider bg-card-alt">Credit Note Value</th>
+                      <th className="text-right px-5 py-3 text-[11px] font-semibold text-muted uppercase tracking-wider bg-card-alt">Taxable Value</th>
+                      <th className="text-right px-5 py-3 text-[11px] font-semibold text-muted uppercase tracking-wider bg-card-alt">CGST @{GST_RATE / 2}%</th>
+                      <th className="text-right px-5 py-3 text-[11px] font-semibold text-muted uppercase tracking-wider bg-card-alt">SGST @{GST_RATE / 2}%</th>
+                      <th className="text-right px-5 py-3 text-[11px] font-semibold text-muted uppercase tracking-wider bg-card-alt">Total Tax Reversal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {refundGST.map((i) => (
+                      <tr key={i.type} className="border-b border-dashed border-border hover:bg-card-hover transition-colors">
+                        <td className="px-5 py-3 text-[13px] font-medium text-heading flex items-center gap-1.5">
+                          <RotateCcw className="w-3 h-3 text-orange-500" />
+                          {i.type.replace(/_/g, ' ')}
+                        </td>
+                        <td className="px-5 py-3 text-right text-[13px] text-muted">{fmt(i.amount)}</td>
+                        <td className="px-5 py-3 text-right text-[13px] text-muted">{fmt(i.base)}</td>
+                        <td className="px-5 py-3 text-right text-[13px] text-muted">{fmt(i.cgst)}</td>
+                        <td className="px-5 py-3 text-right text-[13px] text-muted">{fmt(i.sgst)}</td>
+                        <td className="px-5 py-3 text-right text-[13px] font-semibold text-orange-700 dark:text-orange-400">{fmt(i.cgst + i.sgst)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot><tr className="bg-orange-50 dark:bg-orange-500/10 border-t-2 border-orange-200 dark:border-orange-500/20">
+                    <td className="px-5 py-3 text-[13px] font-bold text-orange-800 dark:text-orange-400">Total</td>
+                    <td className="px-5 py-3 text-right text-[13px] font-bold text-orange-800 dark:text-orange-400">{fmt(data.totalRefunds)}</td>
+                    <td className="px-5 py-3 text-right text-[13px] font-bold text-orange-800 dark:text-orange-400">{fmt(refundGST.reduce((s, i) => s + i.base, 0))}</td>
+                    <td className="px-5 py-3 text-right text-[13px] font-bold text-orange-800 dark:text-orange-400">{fmt(totalRefundCGST)}</td>
+                    <td className="px-5 py-3 text-right text-[13px] font-bold text-orange-800 dark:text-orange-400">{fmt(totalRefundSGST)}</td>
+                    <td className="px-5 py-3 text-right text-[13px] font-bold text-orange-800 dark:text-orange-400">{fmt(totalRefundCGST + totalRefundSGST)}</td>
+                  </tr></tfoot>
+                </table>
+              </div>
+            </div>
+          )}
 
           {/* Input Tax Credit Table */}
           <div className="bg-card rounded-lg border border-border overflow-hidden mb-6">
@@ -311,6 +403,24 @@ export default function GSTReport() {
                     <td className="px-5 py-3 text-right text-[13px] text-muted">{fmt(totalOutputSGST)}</td>
                     <td className="px-5 py-3 text-right text-[13px] font-semibold text-heading">{fmt(totalOutputCGST + totalOutputSGST)}</td>
                   </tr>
+                  {refundGST.length > 0 && (
+                    <tr className="border-b border-dashed border-border hover:bg-card-hover transition-colors">
+                      <td className="px-5 py-3 text-[13px] text-orange-700 dark:text-orange-400 flex items-center gap-1.5">
+                        <RotateCcw className="w-3 h-3" /> Less: Credit Notes (Refunds)
+                      </td>
+                      <td className="px-5 py-3 text-right text-[13px] text-orange-600 dark:text-orange-400">- {fmt(totalRefundCGST)}</td>
+                      <td className="px-5 py-3 text-right text-[13px] text-orange-600 dark:text-orange-400">- {fmt(totalRefundSGST)}</td>
+                      <td className="px-5 py-3 text-right text-[13px] font-semibold text-orange-700 dark:text-orange-400">- {fmt(totalRefundCGST + totalRefundSGST)}</td>
+                    </tr>
+                  )}
+                  {refundGST.length > 0 && (
+                    <tr className="border-b border-dashed border-border bg-card-alt">
+                      <td className="px-5 py-3 text-[13px] font-medium text-heading">Net Output Tax</td>
+                      <td className="px-5 py-3 text-right text-[13px] font-medium text-heading">{fmt(effectiveOutputCGST)}</td>
+                      <td className="px-5 py-3 text-right text-[13px] font-medium text-heading">{fmt(effectiveOutputSGST)}</td>
+                      <td className="px-5 py-3 text-right text-[13px] font-semibold text-heading">{fmt(effectiveOutputCGST + effectiveOutputSGST)}</td>
+                    </tr>
+                  )}
                   <tr className="border-b border-dashed border-border hover:bg-card-hover transition-colors">
                     <td className="px-5 py-3 text-[13px] text-heading">Less: Input Tax Credit (ITC)</td>
                     <td className="px-5 py-3 text-right text-[13px] text-muted">{fmt(totalInputCGST)}</td>

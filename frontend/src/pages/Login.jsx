@@ -23,15 +23,8 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-      const userData = await login(username, password);
-      const roles = userData.roles || [userData.role];
-      if (roles.includes('GUARD') && !roles.includes('ADMIN')) {
-        navigate('/guard-dashboard');
-      } else if (roles.includes('ADMIN') || roles.includes('PRESIDENT') || roles.includes('SECRETARY')) {
-        navigate('/dashboard');
-      } else {
-        navigate('/user-dashboard');
-      }
+      await login(username, password);
+      navigate('/home');
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');
     } finally {

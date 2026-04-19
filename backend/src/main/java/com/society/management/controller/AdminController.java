@@ -42,6 +42,7 @@ public class AdminController {
     private final FundReleaseService fundReleaseService;
     private final TypeConfigService typeConfigService;
     private final DataCleanupService dataCleanupService;
+    private final PaymentRefundService paymentRefundService;
 
     public AdminController(AuthService authService, UserService userService, PropertyService propertyService,
                            PaymentService paymentService, AmenityBookingService bookingService,
@@ -59,7 +60,8 @@ public class AdminController {
                            PermissionService permissionService,
                            FundReleaseService fundReleaseService,
                            TypeConfigService typeConfigService,
-                           DataCleanupService dataCleanupService) {
+                           DataCleanupService dataCleanupService,
+                           PaymentRefundService paymentRefundService) {
         this.authService = authService;
         this.userService = userService;
         this.propertyService = propertyService;
@@ -83,6 +85,7 @@ public class AdminController {
         this.fundReleaseService = fundReleaseService;
         this.typeConfigService = typeConfigService;
         this.dataCleanupService = dataCleanupService;
+        this.paymentRefundService = paymentRefundService;
     }
 
     // ---- User Management ----
@@ -464,6 +467,18 @@ public class AdminController {
         return ResponseEntity.ok(visitorService.getAllActiveDailyHelp());
     }
 
+    @PostMapping("/daily-help/society-staff")
+    public ResponseEntity<DailyHelpResponse> addSocietyStaff(@AuthenticationPrincipal UserDetails userDetails,
+                                                               @Valid @RequestBody DailyHelpRequest request) {
+        return ResponseEntity.ok(visitorService.addSocietyStaff(request, userDetails.getUsername()));
+    }
+
+    @PostMapping("/daily-help/{id}/photo")
+    public ResponseEntity<DailyHelpResponse> uploadDailyHelpPhoto(@PathVariable Long id,
+                                                                    @RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(visitorService.uploadDailyHelpPhoto(id, file));
+    }
+
     // ---- Emergency Contacts ----
 
     @GetMapping("/emergency-contacts")
@@ -825,6 +840,44 @@ public class AdminController {
     public ResponseEntity<MessageResponse> deleteExpenseType(@PathVariable Long id) {
         typeConfigService.deleteExpenseType(id);
         return ResponseEntity.ok(new MessageResponse("Expense type deleted successfully"));
+    }
+
+    // ---- Payment Refunds ----
+
+    @GetMapping("/refunds")
+    public ResponseEntity<List<PaymentRefundResponse>> getAllRefunds() {
+        return ResponseEntity.ok(paymentRefundService.getAllRefunds());
+    }
+
+    @GetMapping("/refunds/status/{status}")
+    public ResponseEntity<List<PaymentRefundResponse>> getRefundsByStatus(@PathVariable String status) {
+        return ResponseEntity.ok(paymentRefundService.getRefundsByStatus(status));
+    }
+
+    @PostMapping("/refunds")
+    public ResponseEntity<PaymentRefundResponse> createRefund(
+            @Valid @RequestBody PaymentRefundRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(paymentRefundService.createRefundRequest(request, userDetails.getUsername()));
+    }
+
+    @PutMapping("/refunds/{id}/approve")
+    public ResponseEntity<PaymentRefundResponse> approveRefund(@PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(paymentRefundService.approveRefund(id, userDetails.getUsername()));
+    }
+
+    @PutMapping("/refunds/{id}/reject")
+    public ResponseEntity<PaymentRefundResponse> rejectRefund(@PathVariable Long id,
+            @RequestBody PaymentRefundRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(paymentRefundService.rejectRefund(id, request.getRejectionReason(), userDetails.getUsername()));
+    }
+
+    @PutMapping("/refunds/{id}/process")
+    public ResponseEntity<PaymentRefundResponse> processRefund(@PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(paymentRefundService.processRefund(id, userDetails.getUsername()));
     }
 
     // ─── Data Cleanup (ADMIN only) ─────────────────────────────────

@@ -225,6 +225,25 @@ public class UserController {
         return ResponseEntity.ok(new MessageResponse("Daily help deactivated"));
     }
 
+    @PutMapping("/daily-help/{id}/approve")
+    public ResponseEntity<DailyHelpResponse> approveDailyHelp(@PathVariable Long id,
+                                                                @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(visitorService.approveDailyHelp(id, userDetails.getUsername()));
+    }
+
+    @PutMapping("/daily-help/{id}/reject")
+    public ResponseEntity<DailyHelpResponse> rejectDailyHelp(@PathVariable Long id,
+                                                               @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(visitorService.rejectDailyHelp(id, userDetails.getUsername()));
+    }
+
+    @PostMapping("/daily-help/{id}/photo")
+    public ResponseEntity<DailyHelpResponse> uploadDailyHelpPhoto(@PathVariable Long id,
+                                                                    @RequestParam("file") MultipartFile file,
+                                                                    @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(visitorService.uploadDailyHelpPhoto(id, file));
+    }
+
     // ---- Deliveries ----
 
     @GetMapping("/deliveries")

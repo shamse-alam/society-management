@@ -12,10 +12,11 @@ public class PreApproveRequest {
     private String visitorName;
     @NotBlank
     private String visitorPhone;
+    private String visitorEmail;
     private String visitorType; // GUEST, DELIVERY, CAB, OTHER
     private String vehicleNumber;
     private String purpose;
+    private LocalDateTime expectedAt; // kept for backward compatibility
     @NotNull
-    private LocalDateTime expectedAt;
-    private LocalDateTime validUntil; // defaults to expectedAt + 4 hours
+    private LocalDateTime validUntil; // pre-approval expires after this time
 }

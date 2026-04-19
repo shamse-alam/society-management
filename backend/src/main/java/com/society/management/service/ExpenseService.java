@@ -4,6 +4,7 @@ import com.society.management.dto.*;
 import com.society.management.entity.*;
 import com.society.management.repository.ExpenseRepository;
 import com.society.management.repository.FundReleaseRepository;
+import com.society.management.repository.PaymentRefundRepository;
 import com.society.management.repository.PaymentRepository;
 import com.society.management.repository.UserRepository;
 import com.society.management.repository.VendorRepository;
@@ -31,6 +32,7 @@ public class ExpenseService {
     private final ExpenseRepository expenseRepository;
     private final PaymentRepository paymentRepository;
     private final FundReleaseRepository fundReleaseRepository;
+    private final PaymentRefundRepository paymentRefundRepository;
     private final VendorRepository vendorRepository;
     private final UserRepository userRepository;
     private final EmailService emailService;
@@ -42,12 +44,14 @@ public class ExpenseService {
 
     public ExpenseService(ExpenseRepository expenseRepository, PaymentRepository paymentRepository,
                           FundReleaseRepository fundReleaseRepository,
+                          PaymentRefundRepository paymentRefundRepository,
                           VendorRepository vendorRepository, UserRepository userRepository,
                           EmailService emailService, SocietyConfigService societyConfigService,
                           TypeConfigService typeConfigService) {
         this.expenseRepository = expenseRepository;
         this.paymentRepository = paymentRepository;
         this.fundReleaseRepository = fundReleaseRepository;
+        this.paymentRefundRepository = paymentRefundRepository;
         this.vendorRepository = vendorRepository;
         this.userRepository = userRepository;
         this.emailService = emailService;
@@ -340,6 +344,34 @@ public class ExpenseService {
                 .map(ExpenseResponse::from)
                 .collect(Collectors.toList());
 
+        // Refund calculations — PROCESSED refunds within date range
+        List<PaymentRefund> processedRefunds;
+        if (from != null && to != null) {
+            processedRefunds = paymentRefundRepository.findByStatusAndProcessedAtBetween(
+                    PaymentRefundStatus.PROCESSED,
+                    from.atStartOfDay(), to.plusDays(1).atStartOfDay());
+        } else {
+            processedRefunds = paymentRefundRepository.findByStatusIn(
+                    List.of(PaymentRefundStatus.PROCESSED));
+        }
+
+        BigDecimal totalRefunds = processedRefunds.stream()
+                .map(PaymentRefund::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        Map<String, BigDecimal> refundByType = new LinkedHashMap<>();
+        Map<String, Integer> refundCountByType = new LinkedHashMap<>();
+        for (PaymentRefund r : processedRefunds) {
+            String type = r.getPayment().getPaymentType();
+            refundByType.merge(type, r.getAmount(), BigDecimal::add);
+            refundCountByType.merge(type, 1, Integer::sum);
+        }
+        List<BalanceSheetResponse.RefundEntry> refundBreakdown = new ArrayList<>();
+        refundByType.forEach((type, amount) -> {
+            boolean gstApplicable = true;
+            try { gstApplicable = typeConfigService.getIncomeTypeByCode(type).isGstApplicable(); } catch (Exception ignored) {}
+            refundBreakdown.add(new BalanceSheetResponse.RefundEntry(type, amount, refundCountByType.get(type), gstApplicable));
+        });
+
         // Reserve fund calculations — dynamic from type config
         Set<String> reserveTypeCodes = typeConfigService.getReserveFundTypes().stream()
                 .map(IncomeTypeResponse::getCode)
@@ -363,7 +395,7 @@ public class ExpenseService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal lockedReserveFunds = totalReserveFunds.subtract(releasedReserveFunds).max(BigDecimal.ZERO);
-        BigDecimal availableBalance = operationalIncome.add(releasedReserveFunds).subtract(totalExpense);
+        BigDecimal availableBalance = operationalIncome.add(releasedReserveFunds).subtract(totalExpense).subtract(totalRefunds);
 
         List<BalanceSheetResponse.ReserveFundEntry> reserveBreakdown = new ArrayList<>();
         for (String rt : reserveTypeCodes) {
@@ -380,7 +412,10 @@ public class ExpenseService {
         BalanceSheetResponse res = new BalanceSheetResponse();
         res.setTotalIncome(totalIncome);
         res.setTotalExpense(totalExpense);
-        res.setBalance(totalIncome.subtract(totalExpense));
+        res.setBalance(totalIncome.subtract(totalRefunds).subtract(totalExpense));
+        res.setTotalRefunds(totalRefunds);
+        res.setRefundCount(processedRefunds.size());
+        res.setRefundBreakdown(refundBreakdown);
         res.setIncomeBreakdown(incomeBreakdown);
         res.setExpenseBreakdown(expenseBreakdown);
         res.setIncomeItems(incomeItems);

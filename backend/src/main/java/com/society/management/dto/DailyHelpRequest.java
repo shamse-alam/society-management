@@ -15,4 +15,5 @@ public class DailyHelpRequest {
     private String workingDays; // e.g. "MON,TUE,WED,THU,FRI"
     private String timeSlot; // e.g. "08:00-10:00"
     private LocalDate startDate;
+    private String unitNumber; // for admin/guard adding staff for a specific property
 }

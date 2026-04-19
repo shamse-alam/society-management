@@ -21,9 +21,9 @@
 const { test, expect } = require('../helpers/fixtures');
 
 test.describe('Resident — Dashboard', () => {
-  test('resident can view user dashboard', async ({ residentPage }) => {
-    await residentPage.goto('/user-dashboard');
-    await expect(residentPage).toHaveURL(/\/user-dashboard/);
+  test('resident can view home page', async ({ residentPage }) => {
+    await residentPage.goto('/home');
+    await expect(residentPage).toHaveURL(/\/home/);
     await residentPage.waitForLoadState('networkidle');
   });
 });

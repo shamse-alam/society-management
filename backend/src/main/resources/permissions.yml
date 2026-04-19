@@ -65,6 +65,8 @@ roles:
         methods: ALL
       - pattern: "/api/admin/fund-releases/**"
         methods: ALL
+      - pattern: "/api/admin/refunds/**"
+        methods: ALL
       - pattern: "/api/admin/vendors/**"
         methods: [GET]
       - pattern: "/api/admin/balance-sheet"
@@ -74,6 +76,8 @@ roles:
       - pattern: "/api/admin/move-requests/**"
         methods: ALL
       - pattern: "/api/admin/notices/**"
+        methods: ALL
+      - pattern: "/api/admin/daily-help/**"
         methods: ALL
       - pattern: "/api/user/**"
         methods: ALL
@@ -89,6 +93,8 @@ roles:
         methods: ALL
       - pattern: "/api/admin/fund-releases/**"
         methods: ALL
+      - pattern: "/api/admin/refunds/**"
+        methods: ALL
       - pattern: "/api/admin/vendors/**"
         methods: [GET]
       - pattern: "/api/admin/balance-sheet"
@@ -103,6 +109,8 @@ roles:
         methods: ALL
       - pattern: "/api/admin/visitors/**"
         methods: [GET]
+      - pattern: "/api/admin/daily-help/**"
+        methods: ALL
       - pattern: "/api/user/**"
         methods: ALL
       - pattern: "/api/notifications/**"
@@ -116,6 +124,8 @@ roles:
       - pattern: "/api/admin/expenses/**"
         methods: ALL
       - pattern: "/api/admin/fund-releases/**"
+        methods: ALL
+      - pattern: "/api/admin/refunds/**"
         methods: ALL
       - pattern: "/api/admin/vendors/**"
         methods: ALL

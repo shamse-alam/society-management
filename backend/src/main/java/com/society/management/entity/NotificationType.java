@@ -13,5 +13,6 @@ public enum NotificationType {
     EVENT_NEW,
     MOVE_REQUEST,
     FUND_RELEASE,
+    PAYMENT_REFUND,
     GENERAL
 }

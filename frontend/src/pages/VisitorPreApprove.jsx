@@ -45,7 +45,7 @@ export default function VisitorPreApprove() {
 
   // Approval form
   const [modalOpen, setModalOpen] = useState(false);
-  const [form, setForm] = useState({ visitorName: '', visitorPhone: '', visitorType: 'GUEST', vehicleNumber: '', purpose: '', expectedAt: '' });
+  const [form, setForm] = useState({ visitorName: '', visitorPhone: '', visitorEmail: '', visitorType: 'GUEST', vehicleNumber: '', purpose: '', validUntil: '' });
   const [saving, setSaving] = useState(false);
 
   // Generated passcode display
@@ -77,14 +77,15 @@ export default function VisitorPreApprove() {
     try {
       const payload = {
         ...form,
-        expectedAt: new Date(form.expectedAt).toISOString(),
+        validUntil: new Date(form.validUntil).toISOString(),
       };
       const res = await userAPI.preApproveVisitor(payload);
+      const hadEmail = !!form.visitorEmail;
       setGeneratedPasscode(res.data);
       setModalOpen(false);
-      setForm({ visitorName: '', visitorPhone: '', visitorType: 'GUEST', vehicleNumber: '', purpose: '', expectedAt: '' });
+      setForm({ visitorName: '', visitorPhone: '', visitorEmail: '', visitorType: 'GUEST', vehicleNumber: '', purpose: '', validUntil: '' });
       fetchData();
-      toast.success('Visitor pre-approved! Share the passcode.');
+      toast.success(hadEmail ? 'Visitor pre-approved! Passcode sent via email.' : 'Visitor pre-approved! Share the passcode.');
     } catch (err) { toast.error(err.response?.data?.message || 'Failed to pre-approve'); }
     finally { setSaving(false); }
   };
@@ -120,9 +121,9 @@ export default function VisitorPreApprove() {
     toast.success('Passcode copied!');
   };
 
-  // Default expectedAt to 1 hour from now
+  // Default validUntil to 4 hours from now
   const getDefaultDateTime = () => {
-    const d = new Date(Date.now() + 3600000);
+    const d = new Date(Date.now() + 4 * 3600000);
     d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
     return d.toISOString().slice(0, 16);
   };
@@ -136,7 +137,7 @@ export default function VisitorPreApprove() {
           <h1 className="text-xl font-semibold text-heading">Visitor Management</h1>
           <p className="text-[13px] text-muted mt-0.5">Pre-approve visitors and track visit history</p>
         </div>
-        <button onClick={() => { setModalOpen(true); if (!form.expectedAt) setForm({ ...form, expectedAt: getDefaultDateTime() }); }} className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded text-[13px] font-medium hover:bg-indigo-700 transition-colors">
+        <button onClick={() => { setModalOpen(true); if (!form.validUntil) setForm({ ...form, validUntil: getDefaultDateTime() }); }} className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded text-[13px] font-medium hover:bg-indigo-700 transition-colors">
           <UserPlus className="w-4 h-4" /> Pre-Approve Visitor
         </button>
       </div>
@@ -238,7 +239,7 @@ export default function VisitorPreApprove() {
                   </div>
                 </div>
                 <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
-                  <p className="text-[12px] text-muted">Expected: {fmt(a.expectedAt)}</p>
+                  <p className="text-[12px] text-muted">Valid till: {fmt(a.validUntil)}</p>
                   <button onClick={() => handleCancel(a.visitLogId)} className="text-[12px] text-red-600 dark:text-red-400 hover:underline font-medium">Cancel</button>
                 </div>
               </div>
@@ -294,49 +295,61 @@ export default function VisitorPreApprove() {
       )}
 
       {/* Pre-approve modal */}
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Pre-Approve Visitor">
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Pre-Approve Visitor" full>
+        <form onSubmit={handleSubmit}>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-[14px] font-semibold text-heading">Visitor Details</h2>
             <div className="flex items-center gap-2">
               <button type="button" onClick={() => setModalOpen(false)} className="px-4 py-2 border border-border rounded text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
-              <button type="submit" disabled={saving || !form.visitorName || !form.visitorPhone || !form.expectedAt} className="px-4 py-2 bg-indigo-600 text-white rounded text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors inline-flex items-center gap-2">
+              <button type="submit" disabled={saving || !form.visitorName || !form.visitorPhone || !form.validUntil} className="px-4 py-2 bg-indigo-600 text-white rounded text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors inline-flex items-center gap-2">
                 {saving ? <><ButtonSpinner /> Approving...</> : <><Save className="w-4 h-4" /> Pre-Approve & Get Passcode</>}
               </button>
             </div>
           </div>
-          <div>
-            <label className="block text-[13px] font-medium text-sub mb-1">Visitor Name *</label>
-            <input type="text" value={form.visitorName} onChange={(e) => setForm({ ...form, visitorName: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded focus:ring-2 focus:ring-indigo-500 outline-none text-[13px] text-heading" required placeholder="Full name" />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[13px] font-medium text-sub mb-1">Phone *</label>
-              <input type="tel" value={form.visitorPhone} onChange={(e) => setForm({ ...form, visitorPhone: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded focus:ring-2 focus:ring-indigo-500 outline-none text-[13px] text-heading" required placeholder="Mobile number" />
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6">
+            <div className="space-y-6">
+              <div className="bg-card border border-border rounded-xl p-6 space-y-4">
+                <div>
+                  <label className="block text-[13px] font-medium text-heading mb-1">Visitor Name *</label>
+                  <input type="text" value={form.visitorName} onChange={(e) => setForm({ ...form, visitorName: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" required placeholder="Full name" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[13px] font-medium text-heading mb-1">Phone *</label>
+                    <input type="tel" value={form.visitorPhone} onChange={(e) => setForm({ ...form, visitorPhone: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" required placeholder="Mobile number" />
+                  </div>
+                  <div>
+                    <label className="block text-[13px] font-medium text-heading mb-1">Vehicle Number</label>
+                    <input type="text" value={form.vehicleNumber} onChange={(e) => setForm({ ...form, vehicleNumber: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" placeholder="e.g. TS09AB1234" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[13px] font-medium text-heading mb-1">Email</label>
+                  <input type="email" value={form.visitorEmail} onChange={(e) => setForm({ ...form, visitorEmail: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" placeholder="Passcode will be sent to this email" />
+                </div>
+                <div>
+                  <label className="block text-[13px] font-medium text-heading mb-1">Purpose</label>
+                  <input type="text" value={form.purpose} onChange={(e) => setForm({ ...form, purpose: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" placeholder="Purpose of visit" />
+                </div>
+              </div>
             </div>
-            <div>
-              <label className="block text-[13px] font-medium text-sub mb-1">Visitor Type</label>
-              <select value={form.visitorType} onChange={(e) => setForm({ ...form, visitorType: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded focus:ring-2 focus:ring-indigo-500 outline-none text-[13px] text-heading">
-                <option value="GUEST">Guest</option>
-                <option value="DELIVERY">Delivery</option>
-                <option value="CAB">Cab</option>
-                <option value="OTHER">Other</option>
-              </select>
+            <div className="space-y-6 md:sticky md:top-4 md:self-start">
+              <div className="bg-card border border-border rounded-xl p-5">
+                <h2 className="text-[14px] font-semibold text-heading mb-1">Visitor Type</h2>
+                <p className="text-[11px] text-muted mb-3">Classify the visitor.</p>
+                <select value={form.visitorType} onChange={(e) => setForm({ ...form, visitorType: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading">
+                  <option value="GUEST">Guest</option>
+                  <option value="DELIVERY">Delivery</option>
+                  <option value="CAB">Cab</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </div>
+              <div className="bg-card border border-border rounded-xl p-5">
+                <h2 className="text-[14px] font-semibold text-heading mb-1">Valid Till *</h2>
+                <p className="text-[11px] text-muted mb-3">Pre-approval expires after this time.</p>
+                <input type="datetime-local" value={form.validUntil} onChange={(e) => setForm({ ...form, validUntil: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" required />
+              </div>
             </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[13px] font-medium text-sub mb-1">Vehicle Number</label>
-              <input type="text" value={form.vehicleNumber} onChange={(e) => setForm({ ...form, vehicleNumber: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded focus:ring-2 focus:ring-indigo-500 outline-none text-[13px] text-heading" placeholder="e.g. TS09AB1234" />
-            </div>
-            <div>
-              <label className="block text-[13px] font-medium text-sub mb-1">Expected At *</label>
-              <input type="datetime-local" value={form.expectedAt} onChange={(e) => setForm({ ...form, expectedAt: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded focus:ring-2 focus:ring-indigo-500 outline-none text-[13px] text-heading" required />
-            </div>
-          </div>
-          <div>
-            <label className="block text-[13px] font-medium text-sub mb-1">Purpose</label>
-            <input type="text" value={form.purpose} onChange={(e) => setForm({ ...form, purpose: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded focus:ring-2 focus:ring-indigo-500 outline-none text-[13px] text-heading" placeholder="Purpose of visit" />
           </div>
         </form>
       </Modal>

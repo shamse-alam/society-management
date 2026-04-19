@@ -5,6 +5,8 @@ import com.society.management.entity.*;
 import com.society.management.repository.*;
 import org.springframework.stereotype.Service;
 
+import org.springframework.web.multipart.MultipartFile;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -22,12 +24,13 @@ public class VisitorService {
     private final UserRepository userRepository;
     private final PropertyRepository propertyRepository;
     private final NotificationService notificationService;
+    private final EmailService emailService;
     private final Random random = new Random();
 
     public VisitorService(VisitorRepository visitorRepository, VisitLogRepository visitLogRepository,
                           DailyHelpRepository dailyHelpRepository, DeliveryLogRepository deliveryLogRepository,
                           UserRepository userRepository, PropertyRepository propertyRepository,
-                          NotificationService notificationService) {
+                          NotificationService notificationService, EmailService emailService) {
         this.visitorRepository = visitorRepository;
         this.visitLogRepository = visitLogRepository;
         this.dailyHelpRepository = dailyHelpRepository;
@@ -35,6 +38,7 @@ public class VisitorService {
         this.userRepository = userRepository;
         this.propertyRepository = propertyRepository;
         this.notificationService = notificationService;
+        this.emailService = emailService;
     }
 
     // ==================== Pre-Approval ====================
@@ -53,19 +57,31 @@ public class VisitorService {
                 .orElseGet(() -> visitorRepository.save(Visitor.builder()
                         .name(request.getVisitorName())
                         .phone(request.getVisitorPhone())
+                        .email(request.getVisitorEmail())
                         .visitorType(request.getVisitorType() != null
                                 ? VisitorType.valueOf(request.getVisitorType()) : VisitorType.GUEST)
                         .vehicleNumber(request.getVehicleNumber())
                         .build()));
 
-        // Update visitor name if changed
+        // Update visitor details if changed
+        boolean visitorUpdated = false;
         if (!visitor.getName().equals(request.getVisitorName())) {
             visitor.setName(request.getVisitorName());
+            visitorUpdated = true;
+        }
+        if (request.getVisitorEmail() != null && !request.getVisitorEmail().equals(visitor.getEmail())) {
+            visitor.setEmail(request.getVisitorEmail());
+            visitorUpdated = true;
+        }
+        if (visitorUpdated) {
             visitorRepository.save(visitor);
         }
 
-        LocalDateTime validUntil = request.getValidUntil() != null
-                ? request.getValidUntil() : request.getExpectedAt().plusHours(4);
+        LocalDateTime validUntil = request.getValidUntil();
+        // Backward compatibility: if only expectedAt was provided, derive validUntil
+        if (validUntil == null && request.getExpectedAt() != null) {
+            validUntil = request.getExpectedAt().plusHours(4);
+        }
 
         VisitLog visitLog = VisitLog.builder()
                 .visitor(visitor)
@@ -78,7 +94,16 @@ public class VisitorService {
                 .validUntil(validUntil)
                 .build();
 
-        return PreApproveResponse.from(visitLogRepository.save(visitLog));
+        PreApproveResponse response = PreApproveResponse.from(visitLogRepository.save(visitLog));
+
+        // Send passcode email to visitor if email provided
+        if (visitor.getEmail() != null && !visitor.getEmail().isBlank()) {
+            emailService.sendVisitorPasscodeEmail(visitor.getEmail(), visitor.getName(),
+                    response.getPasscode(), validUntil, user.getFullName(),
+                    property != null ? property.getUnitNumber() : user.getUnitNumber());
+        }
+
+        return response;
     }
 
     public List<PreApproveResponse> getMyApprovals(String username) {
@@ -339,9 +364,10 @@ public class VisitorService {
 
     // ==================== Daily Help ====================
 
+    // Resident adds their own daily help — directly APPROVED
     public DailyHelpResponse addDailyHelp(DailyHelpRequest request, String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("Your account was not found. Please log in again."));
 
         Property property = null;
         if (user.getUnitNumber() != null) {
@@ -357,11 +383,115 @@ public class VisitorService {
                 .workingDays(request.getWorkingDays())
                 .timeSlot(request.getTimeSlot())
                 .startDate(request.getStartDate() != null ? request.getStartDate() : LocalDate.now())
+                .status(DailyHelpStatus.APPROVED)
+                .addedBy(user)
+                .approvedBy(user)
+                .approvedAt(LocalDateTime.now())
                 .build();
 
         return DailyHelpResponse.from(dailyHelpRepository.save(dh));
     }
 
+    // Guard adds daily help for a specific villa — PENDING_APPROVAL from villa owner
+    public DailyHelpResponse addDailyHelpForProperty(DailyHelpRequest request, String guardUsername) {
+        User guard = userRepository.findByUsername(guardUsername)
+                .orElseThrow(() -> new RuntimeException("Your account was not found. Please log in again."));
+
+        if (request.getUnitNumber() == null || request.getUnitNumber().isBlank()) {
+            throw new RuntimeException("Please select a property for this staff.");
+        }
+
+        Property property = propertyRepository.findByUnitNumber(request.getUnitNumber())
+                .orElseThrow(() -> new RuntimeException("Property " + request.getUnitNumber() + " was not found. Please select a valid property."));
+
+        User resident = userRepository.findFirstByUnitNumber(request.getUnitNumber())
+                .orElseThrow(() -> new RuntimeException("No resident is registered for property " + request.getUnitNumber() + ". Staff cannot be added without an owner."));
+
+        DailyHelp dh = DailyHelp.builder()
+                .user(resident)
+                .property(property)
+                .name(request.getName())
+                .phone(request.getPhone())
+                .category(DailyHelpCategory.valueOf(request.getCategory()))
+                .workingDays(request.getWorkingDays())
+                .timeSlot(request.getTimeSlot())
+                .startDate(request.getStartDate() != null ? request.getStartDate() : LocalDate.now())
+                .status(DailyHelpStatus.PENDING_APPROVAL)
+                .addedBy(guard)
+                .build();
+
+        DailyHelp saved = dailyHelpRepository.save(dh);
+
+        notificationService.createNotification(
+                resident,
+                "Staff Approval Request",
+                guard.getFullName() + " has registered " + request.getName() + " (" + request.getCategory() + ") for your property. Please approve or reject.",
+                NotificationType.GENERAL,
+                saved.getId()
+        );
+
+        return DailyHelpResponse.from(saved);
+    }
+
+    // Secretary/President adds society-level staff (no property, directly APPROVED)
+    public DailyHelpResponse addSocietyStaff(DailyHelpRequest request, String adminUsername) {
+        User admin = userRepository.findByUsername(adminUsername)
+                .orElseThrow(() -> new RuntimeException("Your account was not found. Please log in again."));
+
+        DailyHelp dh = DailyHelp.builder()
+                .user(admin)
+                .property(null)
+                .name(request.getName())
+                .phone(request.getPhone())
+                .category(DailyHelpCategory.valueOf(request.getCategory()))
+                .workingDays(request.getWorkingDays())
+                .timeSlot(request.getTimeSlot())
+                .startDate(request.getStartDate() != null ? request.getStartDate() : LocalDate.now())
+                .status(DailyHelpStatus.APPROVED)
+                .addedBy(admin)
+                .approvedBy(admin)
+                .approvedAt(LocalDateTime.now())
+                .build();
+
+        return DailyHelpResponse.from(dailyHelpRepository.save(dh));
+    }
+
+    // Resident approves daily help added by guard
+    public DailyHelpResponse approveDailyHelp(Long id, String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Your account was not found. Please log in again."));
+        DailyHelp dh = dailyHelpRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("This staff record was not found. It may have been removed."));
+        if (!dh.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("You can only approve staff registered for your own property.");
+        }
+        if (dh.getStatus() != DailyHelpStatus.PENDING_APPROVAL) {
+            throw new RuntimeException("This staff has already been " + dh.getStatus().name().toLowerCase().replace('_', ' ') + ".");
+        }
+        dh.setStatus(DailyHelpStatus.APPROVED);
+        dh.setApprovedBy(user);
+        dh.setApprovedAt(LocalDateTime.now());
+        return DailyHelpResponse.from(dailyHelpRepository.save(dh));
+    }
+
+    // Resident rejects daily help added by guard
+    public DailyHelpResponse rejectDailyHelp(Long id, String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Your account was not found. Please log in again."));
+        DailyHelp dh = dailyHelpRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("This staff record was not found. It may have been removed."));
+        if (!dh.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("You can only reject staff registered for your own property.");
+        }
+        if (dh.getStatus() != DailyHelpStatus.PENDING_APPROVAL) {
+            throw new RuntimeException("This staff has already been " + dh.getStatus().name().toLowerCase().replace('_', ' ') + ".");
+        }
+        dh.setStatus(DailyHelpStatus.REJECTED);
+        dh.setActive(false);
+        return DailyHelpResponse.from(dailyHelpRepository.save(dh));
+    }
+
+    // Resident gets their daily help (all statuses)
     public List<DailyHelpResponse> getMyDailyHelp(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -370,31 +500,82 @@ public class VisitorService {
                 .collect(Collectors.toList());
     }
 
+    // Guard/Admin gets only APPROVED active daily help (for check-in)
+    public List<DailyHelpResponse> getAllApprovedDailyHelp() {
+        return dailyHelpRepository.findAllByActiveTrueAndStatus(DailyHelpStatus.APPROVED).stream()
+                .map(DailyHelpResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    // Admin gets all active daily help (all statuses)
     public List<DailyHelpResponse> getAllActiveDailyHelp() {
         return dailyHelpRepository.findAllByActiveTrue().stream()
                 .map(DailyHelpResponse::from)
                 .collect(Collectors.toList());
     }
 
+    // Get society-level staff only (no property assigned)
+    public List<DailyHelpResponse> getSocietyStaff() {
+        return dailyHelpRepository.findAllByPropertyIsNullAndActiveTrue().stream()
+                .map(DailyHelpResponse::from)
+                .collect(Collectors.toList());
+    }
+
     public void deactivateDailyHelp(Long id, String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("Your account was not found. Please log in again."));
         DailyHelp dh = dailyHelpRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Daily help not found"));
+                .orElseThrow(() -> new RuntimeException("This staff record was not found. It may have been removed."));
         if (!dh.getUser().getId().equals(user.getId())) {
-            throw new RuntimeException("Not authorized");
+            throw new RuntimeException("You can only deactivate staff registered for your own property.");
         }
         dh.setActive(false);
         dh.setEndDate(LocalDate.now());
         dailyHelpRepository.save(dh);
     }
 
+    // Photo upload for daily help
+    public DailyHelpResponse uploadDailyHelpPhoto(Long id, MultipartFile file) {
+        DailyHelp dh = dailyHelpRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Staff record not found. Cannot upload photo."));
+        try {
+            java.nio.file.Path uploadPath = java.nio.file.Paths.get("./uploads", "daily-help");
+            java.nio.file.Files.createDirectories(uploadPath);
+
+            String originalFilename = file.getOriginalFilename();
+            String extension = originalFilename != null && originalFilename.contains(".")
+                    ? originalFilename.substring(originalFilename.lastIndexOf("."))
+                    : ".jpg";
+            String filename = "dh_" + id + "_" + java.util.UUID.randomUUID().toString().substring(0, 8) + extension;
+
+            java.nio.file.Path filePath = uploadPath.resolve(filename);
+            java.nio.file.Files.copy(file.getInputStream(), filePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+
+            dh.setPhoto("/api/uploads/daily-help/" + filename);
+            return DailyHelpResponse.from(dailyHelpRepository.save(dh));
+        } catch (java.io.IOException e) {
+            throw new RuntimeException("Photo upload failed. Please try a smaller image or a different format (JPG, PNG).");
+        }
+    }
+
+    public java.nio.file.Path getDailyHelpPhotoPath(String filename) {
+        return java.nio.file.Paths.get("./uploads", "daily-help", filename);
+    }
+
     public VisitLogResponse checkInDailyHelp(Long dailyHelpId, String guardUsername) {
         User guard = userRepository.findByUsername(guardUsername)
-                .orElseThrow(() -> new RuntimeException("Guard not found"));
+                .orElseThrow(() -> new RuntimeException("Your account was not found. Please log in again."));
 
         DailyHelp dh = dailyHelpRepository.findById(dailyHelpId)
-                .orElseThrow(() -> new RuntimeException("Daily help not found"));
+                .orElseThrow(() -> new RuntimeException("Staff record not found. It may have been removed."));
+
+        if (!dh.isActive()) {
+            throw new RuntimeException(dh.getName() + " has been deactivated by the property owner and cannot enter.");
+        }
+
+        if (dh.getStatus() != DailyHelpStatus.APPROVED) {
+            throw new RuntimeException(dh.getName() + " is still waiting for approval from the property owner.");
+        }
 
         Visitor visitor = visitorRepository.findByPhone(dh.getPhone() != null ? dh.getPhone() : "")
                 .orElseGet(() -> visitorRepository.save(Visitor.builder()

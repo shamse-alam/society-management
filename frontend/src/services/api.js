@@ -94,6 +94,12 @@ export const adminAPI = {
   getVisitorStats: () => api.get('/admin/visitors/stats'),
   getVisitorAnalytics: (from, to) => api.get('/admin/visitors/analytics', { params: { from, to } }),
   getAllDailyHelp: () => api.get('/admin/daily-help'),
+  addSocietyStaff: (data) => api.post('/admin/daily-help/society-staff', data),
+  uploadDailyHelpPhotoAdmin: (id, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post(`/admin/daily-help/${id}/photo`, formData);
+  },
 
   getExpenses: () => api.get('/admin/expenses'),
   getExpensesByStatus: (status) => api.get(`/admin/expenses/status/${status}`),
@@ -120,6 +126,14 @@ export const adminAPI = {
   approveFundRelease: (id) => api.put(`/admin/fund-releases/${id}/approve`),
   rejectFundRelease: (id, data) => api.put(`/admin/fund-releases/${id}/reject`, data),
   markFundReleased: (id) => api.put(`/admin/fund-releases/${id}/release`),
+
+  // Payment Refunds
+  getRefunds: () => api.get('/admin/refunds'),
+  getRefundsByStatus: (status) => api.get(`/admin/refunds/status/${status}`),
+  createRefund: (data) => api.post('/admin/refunds', data),
+  approveRefund: (id) => api.put(`/admin/refunds/${id}/approve`),
+  rejectRefund: (id, data) => api.put(`/admin/refunds/${id}/reject`, data),
+  processRefund: (id) => api.put(`/admin/refunds/${id}/process`),
 
   generateInvoices: (data) => api.post('/admin/invoices/generate', data),
   applyPenalties: (data) => api.post('/admin/invoices/apply-penalties', data),
@@ -220,7 +234,13 @@ export const guardAPI = {
   getInside: () => api.get('/guard/inside'),
   getStats: () => api.get('/guard/stats'),
   getDailyHelp: () => api.get('/guard/daily-help'),
+  addDailyHelpForProperty: (data) => api.post('/guard/daily-help', data),
   checkInDailyHelp: (id) => api.post(`/guard/daily-help/${id}/check-in`),
+  uploadDailyHelpPhoto: (id, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post(`/guard/daily-help/${id}/photo`, formData);
+  },
   logDelivery: (data) => api.post('/guard/deliveries', data),
   getPendingDeliveries: () => api.get('/guard/deliveries/pending'),
   markPickedUp: (id, receivedBy) => api.put(`/guard/deliveries/${id}/picked-up`, { receivedBy }),
@@ -269,6 +289,13 @@ export const userAPI = {
   addDailyHelp: (data) => api.post('/user/daily-help', data),
   getMyDailyHelp: () => api.get('/user/daily-help'),
   deactivateDailyHelp: (id) => api.put(`/user/daily-help/${id}/deactivate`),
+  approveDailyHelp: (id) => api.put(`/user/daily-help/${id}/approve`),
+  rejectDailyHelp: (id) => api.put(`/user/daily-help/${id}/reject`),
+  uploadDailyHelpPhoto: (id, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post(`/user/daily-help/${id}/photo`, formData);
+  },
   getMyDeliveries: () => api.get('/user/deliveries'),
   getFamilyMembers: () => api.get('/user/family-members'),
   addFamilyMember: (data) => api.post('/user/family-members', data),

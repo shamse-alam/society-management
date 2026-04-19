@@ -3,7 +3,7 @@
  *
  * Covers:
  * - Login / logout flow
- * - Role-based redirect after login (ADMIN → /dashboard, GUARD → /guard-dashboard, RESIDENT → /user-dashboard)
+ * - All roles redirect to /home after login
  * - Unauthenticated access redirects to /login
  * - Admin routes blocked for non-admin roles
  * - Guard routes blocked for non-guard roles
@@ -30,29 +30,29 @@ test.describe('Authentication', () => {
     await expect(page.locator('.bg-red-50, [class*="bg-red"]')).toBeVisible({ timeout: 5000 });
   });
 
-  test('admin login redirects to /dashboard', async ({ page }) => {
+  test('admin login redirects to /home', async ({ page }) => {
     await loginViaUI(page, 'admin', 'welcome');
-    await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page).toHaveURL(/\/home/);
   });
 
-  test('guard login redirects to /guard-dashboard', async ({ page }) => {
+  test('guard login redirects to /home', async ({ page }) => {
     await loginViaUI(page, 'guard', 'welcome');
-    await expect(page).toHaveURL(/\/guard-dashboard/);
+    await expect(page).toHaveURL(/\/home/);
   });
 
-  test('resident login redirects to /user-dashboard', async ({ page }) => {
+  test('resident login redirects to /home', async ({ page }) => {
     await loginViaUI(page, TEST_USERS.resident.username, 'welcome');
-    await expect(page).toHaveURL(/\/user-dashboard/);
+    await expect(page).toHaveURL(/\/home/);
   });
 
-  test('president login redirects to /dashboard', async ({ page }) => {
+  test('president login redirects to /home', async ({ page }) => {
     await loginViaUI(page, TEST_USERS.president.username, 'welcome');
-    await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page).toHaveURL(/\/home/);
   });
 
-  test('secretary login redirects to /dashboard', async ({ page }) => {
+  test('secretary login redirects to /home', async ({ page }) => {
     await loginViaUI(page, TEST_USERS.secretary.username, 'welcome');
-    await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page).toHaveURL(/\/home/);
   });
 });
 
@@ -60,64 +60,52 @@ test.describe('Route Guards — unauthenticated', () => {
   test('unauthenticated user is redirected to /login for protected routes', async ({ browser }) => {
     const ctx = await browser.newContext(); // no auth state
     const page = await ctx.newPage();
-    await page.goto('/dashboard');
+    await page.goto('/home');
     await expect(page).toHaveURL(/\/login/);
-    await page.goto('/user-dashboard');
-    await expect(page).toHaveURL(/\/login/);
-    await page.goto('/guard-dashboard');
+    await page.goto('/payments');
     await expect(page).toHaveURL(/\/login/);
     await ctx.close();
   });
 });
 
 test.describe('Route Guards — role enforcement', () => {
-  test('resident cannot access admin routes → redirected to /user-dashboard', async ({ residentPage }) => {
-    await residentPage.goto('/dashboard');
-    await expect(residentPage).toHaveURL(/\/user-dashboard/);
+  test('resident cannot access admin routes → redirected to /home', async ({ residentPage }) => {
     await residentPage.goto('/users');
-    await expect(residentPage).toHaveURL(/\/user-dashboard/);
+    await expect(residentPage).toHaveURL(/\/home/);
     await residentPage.goto('/payments');
-    await expect(residentPage).toHaveURL(/\/user-dashboard/);
+    await expect(residentPage).toHaveURL(/\/home/);
     await residentPage.goto('/expenses');
-    await expect(residentPage).toHaveURL(/\/user-dashboard/);
+    await expect(residentPage).toHaveURL(/\/home/);
     await residentPage.goto('/society-settings');
-    await expect(residentPage).toHaveURL(/\/user-dashboard/);
+    await expect(residentPage).toHaveURL(/\/home/);
   });
 
   test('guard cannot access admin routes', async ({ guardPage }) => {
-    await guardPage.goto('/dashboard');
-    // guard is not admin, should redirect
-    await expect(guardPage).not.toHaveURL(/^\/dashboard$/);
-  });
-
-  test('resident cannot access guard dashboard', async ({ residentPage }) => {
-    await residentPage.goto('/guard-dashboard');
-    // should redirect away — either to / (DefaultRedirect) or /user-dashboard
-    await expect(residentPage).not.toHaveURL(/\/guard-dashboard/);
+    await guardPage.goto('/users');
+    // guard is not admin, should redirect to /home
+    await expect(guardPage).toHaveURL(/\/home/);
   });
 
   test('admin can access admin routes', async ({ adminPage }) => {
-    await adminPage.goto('/dashboard');
-    await expect(adminPage).toHaveURL(/\/dashboard/);
     await adminPage.goto('/users');
     await expect(adminPage).toHaveURL(/\/users/);
   });
 
   test('accountant can access admin routes (has admin-like frontend access)', async ({ accountantPage }) => {
-    await accountantPage.goto('/dashboard');
-    await expect(accountantPage).toHaveURL(/\/dashboard/);
+    await accountantPage.goto('/payments');
+    await expect(accountantPage).toHaveURL(/\/payments/);
   });
 
-  test('committee member can access admin routes (has admin-like frontend access)', async ({ committeePage }) => {
-    await committeePage.goto('/dashboard');
-    // COMMITTEE_MEMBER is NOT in the adminOnly check list, should redirect to /user-dashboard
-    await expect(committeePage).toHaveURL(/\/user-dashboard/);
+  test('committee member cannot access admin routes → redirected to /home', async ({ committeePage }) => {
+    await committeePage.goto('/payments');
+    // COMMITTEE_MEMBER is NOT in the adminOnly check list, should redirect to /home
+    await expect(committeePage).toHaveURL(/\/home/);
   });
 });
 
 test.describe('Logout', () => {
   test('admin can log out and is redirected to login', async ({ adminPage }) => {
-    await adminPage.goto('/dashboard');
+    await adminPage.goto('/home');
     // Look for logout button/link — typically in sidebar or dropdown
     const logoutBtn = adminPage.getByRole('button', { name: /logout|sign out/i })
       .or(adminPage.locator('[title="Logout"]'))

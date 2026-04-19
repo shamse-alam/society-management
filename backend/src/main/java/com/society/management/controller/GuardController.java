@@ -10,6 +10,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.web.multipart.MultipartFile;
+
 import java.util.List;
 import java.util.Map;
 
@@ -80,13 +82,25 @@ public class GuardController {
 
     @GetMapping("/daily-help")
     public ResponseEntity<List<DailyHelpResponse>> getDailyHelp() {
-        return ResponseEntity.ok(visitorService.getAllActiveDailyHelp());
+        return ResponseEntity.ok(visitorService.getAllApprovedDailyHelp());
+    }
+
+    @PostMapping("/daily-help")
+    public ResponseEntity<DailyHelpResponse> addDailyHelpForProperty(@AuthenticationPrincipal UserDetails userDetails,
+                                                                      @Valid @RequestBody DailyHelpRequest request) {
+        return ResponseEntity.ok(visitorService.addDailyHelpForProperty(request, userDetails.getUsername()));
     }
 
     @PostMapping("/daily-help/{id}/check-in")
     public ResponseEntity<VisitLogResponse> checkInDailyHelp(@PathVariable Long id,
                                                               @AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(visitorService.checkInDailyHelp(id, userDetails.getUsername()));
+    }
+
+    @PostMapping("/daily-help/{id}/photo")
+    public ResponseEntity<DailyHelpResponse> uploadDailyHelpPhoto(@PathVariable Long id,
+                                                                    @RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(visitorService.uploadDailyHelpPhoto(id, file));
     }
 
     @PostMapping("/deliveries")

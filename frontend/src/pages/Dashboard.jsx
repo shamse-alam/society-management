@@ -191,7 +191,7 @@ export default function Dashboard() {
     <div>
       {/* Page header */}
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-heading">Welcome back, {user?.firstName || user?.fullName}</h1>
+        <h1 className="text-xl font-semibold text-heading">Welcome, {user?.firstName || user?.fullName}</h1>
         <p className="text-[13px] text-muted mt-0.5">Here's an overview of your society</p>
       </div>
 

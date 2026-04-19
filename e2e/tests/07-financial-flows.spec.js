@@ -510,3 +510,130 @@ test.describe('Vendor Management', () => {
     expect(res.status).toBe(403);
   });
 });
+
+// ─────────────────────────────────────────────
+// PAYMENT REFUND WORKFLOWS
+// ─────────────────────────────────────────────
+test.describe('Payment Refund Workflows', () => {
+  test('admin can create a refund request against a PAID payment', async ({ adminAPI }) => {
+    const { data: payments } = await adminAPI.get('/admin/payments');
+    const paid = payments.find(p => p.status === 'PAID' && p.description?.startsWith('E2E'));
+    if (!paid) return;
+
+    const res = await adminAPI.post('/admin/refunds', {
+      paymentId: paid.id,
+      amount: paid.amount,
+      reason: 'E2E refund test — overpayment',
+      notes: 'Automated test',
+    });
+    expect([200, 201]).toContain(res.status);
+    expect(res.data.status).toBe('PENDING');
+    expect(res.data.refundNumber).toMatch(/^RFD-/);
+    expect(res.data.paymentType).toBeTruthy();
+  });
+
+  test('admin can view all refunds', async ({ adminAPI }) => {
+    // Ensure at least one refund exists
+    const { data: payments } = await adminAPI.get('/admin/payments');
+    const paid = payments.find(p => p.status === 'PAID' && p.description?.startsWith('E2E'));
+    if (paid) {
+      await adminAPI.post('/admin/refunds', {
+        paymentId: paid.id, amount: paid.amount, reason: 'E2E ensure-refund',
+      });
+    }
+
+    const res = await adminAPI.get('/admin/refunds');
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.data)).toBe(true);
+  });
+
+  test('admin can filter refunds by status', async ({ adminAPI }) => {
+    const res = await adminAPI.get('/admin/refunds/status/PENDING');
+    expect(res.status).toBe(200);
+    res.data.forEach(r => expect(r.status).toBe('PENDING'));
+  });
+
+  test('different role (treasurer) can approve a pending refund (maker-checker)', async ({ adminAPI, treasurerAPI }) => {
+    const { data: refunds } = await adminAPI.get('/admin/refunds/status/PENDING');
+    const pending = refunds.find(r => r.reason?.startsWith('E2E'));
+    if (!pending) return;
+
+    // Same user who requested cannot approve (maker-checker)
+    const selfApprove = await adminAPI.put(`/admin/refunds/${pending.id}/approve`);
+    expect(selfApprove.status).toBe(400);
+
+    // Different authorized role can approve
+    const res = await treasurerAPI.put(`/admin/refunds/${pending.id}/approve`);
+    expect(res.status).toBe(200);
+    expect(res.data.status).toBe('APPROVED');
+    expect(res.data.approvedBy).toBeTruthy();
+  });
+
+  test('admin can process an approved refund', async ({ adminAPI, treasurerAPI }) => {
+    // Try adminAPI first, fall back to treasurerAPI
+    const { data: refunds } = await adminAPI.get('/admin/refunds/status/APPROVED');
+    const approved = refunds.find(r => r.reason?.startsWith('E2E'));
+    if (!approved) return;
+
+    const res = await adminAPI.put(`/admin/refunds/${approved.id}/process`);
+    expect(res.status).toBe(200);
+    expect(res.data.status).toBe('PROCESSED');
+    expect(res.data.processedAt).toBeTruthy();
+  });
+
+  test('processed refund marks original payment as REFUNDED', async ({ adminAPI }) => {
+    // Find a processed refund and check its original payment
+    const { data: refunds } = await adminAPI.get('/admin/refunds/status/PROCESSED');
+    const processed = refunds.find(r => r.reason?.startsWith('E2E'));
+    if (!processed) return;
+
+    const res = await adminAPI.get(`/admin/payments/${processed.paymentId}`);
+    expect(res.status).toBe(200);
+    expect(res.data.status).toBe('REFUNDED');
+  });
+
+  test('admin can reject a refund request', async ({ adminAPI }) => {
+    // Find a PAID payment without an existing non-REJECTED refund
+    const { data: payments } = await adminAPI.get('/admin/payments');
+    const paid = payments.find(p => p.status === 'PAID' && p.description?.startsWith('E2E'));
+    if (!paid) return;
+
+    const create = await adminAPI.post('/admin/refunds', {
+      paymentId: paid.id,
+      amount: 1000,
+      reason: 'E2E refund to reject',
+    });
+    if (create.status !== 200 && create.status !== 201) return;
+
+    const res = await adminAPI.put(`/admin/refunds/${create.data.id}/reject`, {
+      rejectionReason: 'E2E test — not approved',
+    });
+    expect(res.status).toBe(200);
+    expect(res.data.status).toBe('REJECTED');
+    expect(res.data.rejectionReason).toBe('E2E test — not approved');
+  });
+
+  test('balance sheet includes refund deduction fields', async ({ adminAPI }) => {
+    const res = await adminAPI.get('/admin/balance-sheet');
+    expect(res.status).toBe(200);
+    expect(res.data).toHaveProperty('totalRefunds');
+    expect(res.data).toHaveProperty('refundCount');
+    expect(res.data).toHaveProperty('refundBreakdown');
+  });
+
+  test('treasurer can view refunds', async ({ treasurerAPI }) => {
+    const res = await treasurerAPI.get('/admin/refunds');
+    expect([200, 403]).toContain(res.status);
+  });
+
+  test('resident cannot access refund endpoints', async ({ residentAPI }) => {
+    const res = await residentAPI.get('/admin/refunds');
+    expect(res.status).toBe(403);
+  });
+
+  test('refunds page renders for admin', async ({ adminPage }) => {
+    await adminPage.goto('/refunds');
+    await expect(adminPage).toHaveURL(/\/refunds/);
+    await adminPage.waitForLoadState('domcontentloaded');
+  });
+});

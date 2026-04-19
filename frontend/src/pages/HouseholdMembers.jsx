@@ -6,9 +6,10 @@ import { ButtonSpinner } from '../components/Spinner';
 import { ListSkeleton } from '../components/Skeleton';
 import EmptyState from '../components/EmptyState';
 import Modal from '../components/Modal';
-import { Users, Plus, Edit2, Trash2, Phone, Mail, Home, UserCheck, Upload, Save } from 'lucide-react';
+import { Users, Plus, Edit2, Trash2, Phone, Mail, Home, UserCheck, Save } from 'lucide-react';
 import { useSocietyConfig } from '../context/SocietyConfigContext';
 import UserAvatar from '../components/UserAvatar';
+import PhotoPicker from '../components/PhotoPicker';
 
 const relations = ['OWNER', 'SPOUSE', 'SON', 'DAUGHTER', 'PARENT', 'SIBLING', 'TENANT', 'OTHER'];
 
@@ -233,19 +234,7 @@ export default function HouseholdMembers() {
                 </div>
               </div>
               <div className="space-y-6 md:sticky md:top-4 md:self-start">
-                <div className="bg-card border border-border rounded-xl p-5">
-                  <h2 className="text-[14px] font-semibold text-heading mb-4">Photo</h2>
-                  <div className="flex flex-col items-center text-center">
-                    <div className="w-24 h-24 rounded-xl border-2 border-dashed border-border flex items-center justify-center bg-card-alt overflow-hidden mb-3">
-                      {imagePreview ? <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" /> : <Users className="w-10 h-10 text-muted opacity-40" />}
-                    </div>
-                    <label className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-[13px] font-medium hover:bg-indigo-700 transition-colors cursor-pointer">
-                      <Upload className="w-4 h-4" /> Upload Photo
-                      <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
-                    </label>
-                    <p className="text-[11px] text-muted mt-2">Square PNG or JPG, max 5MB</p>
-                  </div>
-                </div>
+                <PhotoPicker preview={imagePreview} onChange={(file) => { setImageFile(file); if (file) setImagePreview(URL.createObjectURL(file)); else setImagePreview(editing?.photoUrl || null); }} icon={Users} />
                 <div className="bg-card border border-border rounded-xl p-5">
                   <h2 className="text-[14px] font-semibold text-heading mb-1">Relation</h2>
                   <p className="text-[11px] text-muted mb-3">Relationship to the primary owner.</p>

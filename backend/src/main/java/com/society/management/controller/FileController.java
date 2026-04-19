@@ -41,6 +41,12 @@ public class FileController {
         return serveFile(familyMemberService.getPhotoPath(filename), filename);
     }
 
+    @GetMapping("/daily-help/{filename}")
+    public ResponseEntity<Resource> getDailyHelpPhoto(@PathVariable String filename) {
+        Path filePath = Path.of("./uploads/daily-help").resolve(filename);
+        return serveFile(filePath, filename);
+    }
+
     @GetMapping("/complaints/{filename}")
     public ResponseEntity<Resource> getComplaintAttachment(@PathVariable String filename) {
         Path filePath = Path.of("./uploads/complaints").resolve(filename);

@@ -30,10 +30,11 @@ export function AuthProvider({ children }) {
 
   const hasRole = useCallback((role) => user?.roles?.includes(role) || false, [user]);
   const isAdmin = user?.roles?.includes('ADMIN') || false;
-  const isGuard = user?.roles?.includes('GUARD') && !isAdmin;
+  const isGuard = user?.roles?.includes('GUARD') || false;
+  const isGuardOnly = isGuard && !user?.roles?.some(r => r !== 'GUARD');
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAdmin, isGuard, hasRole }}>
+    <AuthContext.Provider value={{ user, login, logout, isAdmin, isGuard, isGuardOnly, hasRole }}>
       {children}
     </AuthContext.Provider>
   );

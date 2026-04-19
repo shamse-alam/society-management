@@ -1,11 +1,12 @@
 import { ButtonSpinner } from '../components/Spinner';
 import { ListSkeleton } from '../components/Skeleton';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { guardAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import Modal from '../components/Modal';
-import { Shield, Search, LogIn, LogOut, Users, Clock, Package, UserCheck, AlertTriangle, Truck, ChevronDown, Copy, Ban, Hourglass, Bell, Save } from 'lucide-react';
+import { Shield, Search, LogIn, LogOut, Users, Clock, Package, UserCheck, AlertTriangle, Truck, ChevronDown, Copy, Ban, Hourglass, Bell, Save, LayoutGrid, List } from 'lucide-react';
 import { useSocietyConfig } from '../context/SocietyConfigContext';
+import PhotoPicker from '../components/PhotoPicker';
 
 const fmt = (dt) => {
   if (!dt) return '-';
@@ -20,12 +21,13 @@ const duration = (checkIn) => {
   return `${Math.floor(mins / 60)}h ${mins % 60}m`;
 };
 
-export default function GuardDashboard() {
+const GuardDashboard = forwardRef(function GuardDashboard({ embedded = false }, ref) {
   const toast = useToast();
   const { config } = useSocietyConfig();
   const propertyLabel = config?.propertyLabel || 'Property';
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('expected');
+  const [viewMode, setViewMode] = useState('card'); // 'card' | 'list'
   const [stats, setStats] = useState({});
   const [expected, setExpected] = useState([]);
   const [awaiting, setAwaiting] = useState([]);
@@ -53,8 +55,23 @@ export default function GuardDashboard() {
   const [pickupId, setPickupId] = useState(null);
   const [receivedBy, setReceivedBy] = useState('');
 
+  // Deny modal
+  const [denyOpen, setDenyOpen] = useState(false);
+  const [denyId, setDenyId] = useState(null);
+  const [denyNotes, setDenyNotes] = useState('');
+  const [denySaving, setDenySaving] = useState(false);
+
+  // Staff registration modal (guard adds for a property)
+  const [staffOpen, setStaffOpen] = useState(false);
+  const [staffForm, setStaffForm] = useState({ name: '', phone: '', category: 'MAID', unitNumber: '', workingDays: 'MON,TUE,WED,THU,FRI,SAT', timeSlot: '08:00-10:00' });
+  const [staffSaving, setStaffSaving] = useState(false);
+  const [staffPhotoFile, setStaffPhotoFile] = useState(null);
+
   // Properties list for dropdown
   const [properties, setProperties] = useState([]);
+
+  // Expose openWalkIn to parent via ref
+  useImperativeHandle(ref, () => ({ openWalkIn: () => setWalkInOpen(true) }), []);
 
   const fetchAll = async () => {
     try {
@@ -117,15 +134,25 @@ export default function GuardDashboard() {
     } catch (err) { toast.error(err.response?.data?.message || 'Check-out failed'); }
   };
 
-  const handleDeny = async (id) => {
-    const notes = prompt('Reason for denial (optional):');
+  const openDenyModal = (id) => {
+    setDenyId(id);
+    setDenyNotes('');
+    setDenyOpen(true);
+  };
+
+  const handleDeny = async () => {
+    setDenySaving(true);
     try {
-      await guardAPI.denyEntry(id, notes);
+      await guardAPI.denyEntry(denyId, denyNotes || null);
       toast.success('Entry denied');
+      setDenyOpen(false);
+      setDenyId(null);
+      setDenyNotes('');
       setVerifiedVisitor(null);
       setPasscode('');
       fetchAll();
     } catch (err) { toast.error('Failed to deny entry'); }
+    finally { setDenySaving(false); }
   };
 
   const handleWalkIn = async (e) => {
@@ -148,6 +175,23 @@ export default function GuardDashboard() {
       toast.success('Daily help checked in');
       fetchAll();
     } catch (err) { toast.error(err.response?.data?.message || 'Check-in failed'); }
+  };
+
+  const handleAddStaff = async (e) => {
+    e.preventDefault();
+    setStaffSaving(true);
+    try {
+      const res = await guardAPI.addDailyHelpForProperty(staffForm);
+      if (staffPhotoFile && res.data?.id) {
+        try { await guardAPI.uploadDailyHelpPhoto(res.data.id, staffPhotoFile); } catch {}
+      }
+      toast.success('Staff registered! Awaiting owner approval.');
+      setStaffOpen(false);
+      setStaffForm({ name: '', phone: '', category: 'MAID', unitNumber: '', workingDays: 'MON,TUE,WED,THU,FRI,SAT', timeSlot: '08:00-10:00' });
+      setStaffPhotoFile(null);
+      fetchAll();
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed to register staff'); }
+    finally { setStaffSaving(false); }
   };
 
   const handleLogDelivery = async (e) => {
@@ -175,7 +219,7 @@ export default function GuardDashboard() {
     } catch (err) { toast.error('Failed to mark pickup'); }
   };
 
-  if (loading) return <ListSkeleton />;
+  if (loading) return embedded ? null : <ListSkeleton />;
 
   const tabs = [
     { id: 'awaiting', label: 'Awaiting', count: awaiting.length, icon: Hourglass },
@@ -197,24 +241,49 @@ export default function GuardDashboard() {
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
-            <Shield className="w-5 h-5 text-white" />
+      {/* Header — only shown on standalone page */}
+      {!embedded && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
+              <Shield className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-semibold text-heading">Gate Control</h1>
+              <p className="text-[13px] text-muted mt-0.5">Visitor management & entry tracking</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-semibold text-heading">Guard Dashboard</h1>
-            <p className="text-[13px] text-muted mt-0.5">Visitor management & gate control</p>
-          </div>
+          <button onClick={() => setWalkInOpen(true)} className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded text-[13px] font-medium hover:bg-indigo-700 transition-colors">
+            <Bell className="w-4 h-4" /> Walk-in Approval
+          </button>
         </div>
-        <button onClick={() => setWalkInOpen(true)} className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded text-[13px] font-medium hover:bg-indigo-700 transition-colors">
-          <Bell className="w-4 h-4" /> Walk-in Approval
-        </button>
+      )}
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
+        {[
+          { label: 'Awaiting', value: stats.awaitingApproval || 0, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-500/10', icon: Hourglass },
+          { label: 'Approved', value: stats.expectedToday || 0, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-500/10', icon: Clock },
+          { label: 'Inside', value: stats.currentlyInside || 0, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-500/10', icon: Users },
+          { label: 'Checked Out', value: stats.todayCheckOuts || 0, color: 'text-gray-600 dark:text-gray-400', bg: 'bg-gray-50 dark:bg-gray-500/10', icon: LogOut },
+          { label: 'Deliveries', value: stats.pendingDeliveries || 0, color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-500/10', icon: Package },
+        ].map((s) => (
+          <div key={s.label} className="bg-card rounded-lg border border-border p-4">
+            <div className="flex items-center gap-3">
+              <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${s.bg}`}>
+                <s.icon className={`w-4.5 h-4.5 ${s.color}`} />
+              </div>
+              <div>
+                <p className="text-xl font-bold text-heading">{s.value}</p>
+                <p className="text-[11px] text-muted font-medium">{s.label}</p>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Passcode Verification */}
-      <div className="bg-card rounded-lg border border-border p-5 mb-6">
+      <div className="bg-card rounded-lg border border-border p-5 mb-4">
         <label className="block text-[13px] font-medium text-sub mb-2">Verify Visitor Passcode</label>
         <div className="flex gap-3">
           <div className="relative flex-1 max-w-xs">
@@ -241,13 +310,13 @@ export default function GuardDashboard() {
                 <p className="text-[13px] text-muted mt-0.5">{verifiedVisitor.visitorPhone} {verifiedVisitor.vehicleNumber && `| ${verifiedVisitor.vehicleNumber}`}</p>
                 <p className="text-[13px] text-sub mt-1">Visiting <span className="font-medium">{verifiedVisitor.residentName}</span> at {propertyLabel} <span className="font-medium">{verifiedVisitor.unitNumber}</span></p>
                 {verifiedVisitor.purpose && <p className="text-[13px] text-muted mt-0.5">Purpose: {verifiedVisitor.purpose}</p>}
-                <p className="text-[12px] text-muted mt-1">Expected: {fmt(verifiedVisitor.expectedAt)}</p>
+                <p className="text-[12px] text-muted mt-1">Valid till: {fmt(verifiedVisitor.validUntil)}</p>
               </div>
               <div className="flex gap-2">
                 <button onClick={() => handleCheckIn(verifiedVisitor)} className="px-4 py-2 bg-indigo-600 text-white rounded text-[13px] font-medium hover:bg-indigo-700 transition-colors flex items-center gap-1.5">
                   <LogIn className="w-3.5 h-3.5" /> Allow Entry
                 </button>
-                <button onClick={() => handleDeny(verifiedVisitor.id)} className="px-4 py-2 bg-red-600 text-white rounded text-[13px] font-medium hover:bg-red-700 transition-colors flex items-center gap-1.5">
+                <button onClick={() => openDenyModal(verifiedVisitor.id)} className="px-4 py-2 bg-red-600 text-white rounded text-[13px] font-medium hover:bg-red-700 transition-colors flex items-center gap-1.5">
                   <Ban className="w-3.5 h-3.5" /> Deny
                 </button>
               </div>
@@ -256,216 +325,372 @@ export default function GuardDashboard() {
         )}
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
-        {[
-          { label: 'Awaiting', value: stats.awaitingApproval || 0, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-500/10', icon: Hourglass },
-          { label: 'Approved', value: stats.expectedToday || 0, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-500/10', icon: Clock },
-          { label: 'Inside', value: stats.currentlyInside || 0, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-500/10', icon: Users },
-          { label: 'Checked Out', value: stats.todayCheckOuts || 0, color: 'text-gray-600 dark:text-gray-400', bg: 'bg-gray-50 dark:bg-gray-500/10', icon: LogOut },
-          { label: 'Deliveries', value: stats.pendingDeliveries || 0, color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-500/10', icon: Package },
-        ].map((s) => (
-          <div key={s.label} className="bg-card rounded-lg border border-border p-4">
-            <div className="flex items-center gap-3">
-              <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${s.bg}`}>
-                <s.icon className={`w-4.5 h-4.5 ${s.color}`} />
-              </div>
-              <div>
-                <p className="text-xl font-bold text-heading">{s.value}</p>
-                <p className="text-[11px] text-muted font-medium">{s.label}</p>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-1 bg-card-alt rounded-lg p-1 mb-4">
-        {tabs.map((t) => (
-          <button key={t.id} onClick={() => setTab(t.id)}
-            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-[13px] font-medium transition-colors ${
-              tab === t.id ? 'bg-card text-heading shadow-sm' : 'text-muted hover:text-sub'
-            }`}>
-            <t.icon className="w-4 h-4" />
-            {t.label}
-            {t.count > 0 && <span className={`px-1.5 py-0.5 rounded text-[11px] font-bold ${tab === t.id ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-400' : 'bg-card-alt text-muted'}`}>{t.count}</span>}
+      {/* Tabs + View Toggle */}
+      <div className="flex items-center gap-2 mb-4">
+        <div className="flex gap-1 bg-card-alt rounded-lg p-1 flex-1">
+          {tabs.map((t) => (
+            <button key={t.id} onClick={() => setTab(t.id)}
+              className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-[13px] font-medium transition-colors ${
+                tab === t.id ? 'bg-card text-heading shadow-sm' : 'text-muted hover:text-sub'
+              }`}>
+              <t.icon className="w-4 h-4" />
+              <span className="hidden sm:inline">{t.label}</span>
+              {t.count > 0 && <span className={`px-1.5 py-0.5 rounded text-[11px] font-bold ${tab === t.id ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-400' : 'bg-card-alt text-muted'}`}>{t.count}</span>}
+            </button>
+          ))}
+        </div>
+        <div className="flex bg-card-alt rounded-lg p-1">
+          <button onClick={() => setViewMode('card')} className={`p-2 rounded-md transition-colors ${viewMode === 'card' ? 'bg-card text-heading shadow-sm' : 'text-muted hover:text-sub'}`} title="Card view">
+            <LayoutGrid className="w-4 h-4" />
           </button>
-        ))}
+          <button onClick={() => setViewMode('list')} className={`p-2 rounded-md transition-colors ${viewMode === 'list' ? 'bg-card text-heading shadow-sm' : 'text-muted hover:text-sub'}`} title="List view">
+            <List className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* Tab content */}
-      <div className="space-y-3">
-        {tab === 'awaiting' && (
-          awaiting.length === 0 ? (
-            <div className="bg-card rounded-lg border border-border p-12 text-center">
-              <Hourglass className="w-10 h-10 text-muted mx-auto mb-3" />
-              <p className="text-[13px] text-muted">No visitors awaiting resident approval</p>
-              <p className="text-[12px] text-muted mt-1">Use "Walk-in Entry" to request resident approval</p>
+      {tab === 'awaiting' && (
+        awaiting.length === 0 ? (
+          <div className="bg-card rounded-lg border border-border p-12 text-center">
+            <Hourglass className="w-10 h-10 text-muted mx-auto mb-3" />
+            <p className="text-[13px] text-muted">No visitors awaiting resident approval</p>
+            <p className="text-[12px] text-muted mt-1">Use "Walk-in Approval" to request resident approval</p>
+          </div>
+        ) : viewMode === 'list' ? (
+          <div className="bg-card rounded-lg border border-border overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-[13px]">
+                <thead><tr className="border-b border-border bg-card-alt">
+                  <th className="text-left px-4 py-2.5 font-medium text-muted">Visitor</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted">{propertyLabel}</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted">Purpose</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted">Requested</th>
+                  <th className="px-4 py-2.5"></th>
+                </tr></thead>
+                <tbody className="divide-y divide-border">
+                  {awaiting.map((v) => (
+                    <tr key={v.id} className="hover:bg-card-hover">
+                      <td className="px-4 py-2.5">
+                        <p className="font-medium text-heading">{v.visitorName}</p>
+                        <p className="text-[11px] text-muted">{v.visitorPhone}</p>
+                      </td>
+                      <td className="px-4 py-2.5 text-sub">{v.unitNumber}</td>
+                      <td className="px-4 py-2.5 text-muted">{v.purpose || '-'}</td>
+                      <td className="px-4 py-2.5 text-muted">{fmt(v.createdAt)}</td>
+                      <td className="px-4 py-2.5">
+                        <button onClick={() => openDenyModal(v.id)} className="px-2.5 py-1 border border-red-300 dark:border-red-500/30 text-red-600 dark:text-red-400 rounded text-[11px] font-medium hover:bg-red-50 dark:hover:bg-red-500/10">Deny</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          ) : awaiting.map((v) => (
-            <div key={v.id} className="bg-card rounded-lg border border-amber-200 dark:border-amber-500/20 p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="text-[15px] font-semibold text-heading">{v.visitorName}</p>
-                    <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">Awaiting Approval</span>
-                  </div>
-                  <p className="text-[13px] text-muted mt-0.5">{v.visitorPhone} {v.vehicleNumber && `| ${v.vehicleNumber}`}</p>
-                  <p className="text-[13px] text-sub mt-1">{propertyLabel} <span className="font-medium">{v.unitNumber}</span> - {v.residentName}</p>
-                  {v.purpose && <p className="text-[12px] text-muted mt-0.5">{v.purpose}</p>}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+            {awaiting.map((v) => (
+              <div key={v.id} className="bg-card rounded-lg border border-amber-200 dark:border-amber-500/20 p-3.5">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <p className="text-[14px] font-semibold text-heading truncate">{v.visitorName}</p>
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 shrink-0">Awaiting</span>
                 </div>
-                <div className="text-right shrink-0">
-                  <p className="text-[11px] text-muted">Requested at</p>
-                  <p className="text-[13px] font-medium text-heading">{fmt(v.createdAt)}</p>
-                  <div className="flex items-center gap-1 mt-1 text-amber-600 dark:text-amber-400">
+                <p className="text-[12px] text-muted">{v.visitorPhone}</p>
+                <p className="text-[12px] text-sub mt-1">{propertyLabel} <span className="font-medium">{v.unitNumber}</span> - {v.residentName}</p>
+                {v.purpose && <p className="text-[11px] text-muted mt-0.5 truncate">{v.purpose}</p>}
+                <div className="flex items-center justify-between mt-2.5 pt-2.5 border-t border-border">
+                  <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
                     <Bell className="w-3 h-3 animate-pulse" />
-                    <p className="text-[11px] font-medium">Waiting for resident</p>
+                    <p className="text-[11px] font-medium">Waiting</p>
                   </div>
-                </div>
-              </div>
-              <div className="flex gap-2 mt-3 pt-3 border-t border-border">
-                <button onClick={() => handleDeny(v.id)} className="px-3 py-1.5 border border-red-300 dark:border-red-500/30 text-red-600 dark:text-red-400 rounded text-[12px] font-medium hover:bg-red-50 dark:hover:bg-red-500/10 flex items-center gap-1">
-                  <Ban className="w-3.5 h-3.5" /> Deny Entry
-                </button>
-              </div>
-            </div>
-          ))
-        )}
-
-        {tab === 'expected' && (
-          expected.length === 0 ? (
-            <div className="bg-card rounded-lg border border-border p-12 text-center">
-              <Clock className="w-10 h-10 text-muted mx-auto mb-3" />
-              <p className="text-[13px] text-muted">No expected visitors right now</p>
-            </div>
-          ) : expected.map((v) => (
-            <div key={v.id} className="bg-card rounded-lg border border-border p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="text-[15px] font-semibold text-heading">{v.visitorName}</p>
-                    <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400">{v.visitorType}</span>
-                  </div>
-                  <p className="text-[13px] text-muted mt-0.5">{v.visitorPhone} {v.vehicleNumber && `| ${v.vehicleNumber}`}</p>
-                  <p className="text-[13px] text-sub mt-1">{propertyLabel} <span className="font-medium">{v.unitNumber}</span> - {v.residentName}</p>
-                  {v.purpose && <p className="text-[12px] text-muted mt-0.5">{v.purpose}</p>}
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-[11px] text-muted mb-1">Passcode</p>
-                  <p className="text-lg font-bold font-mono text-indigo-600 dark:text-indigo-400 tracking-wider">{v.passcode}</p>
-                  <p className="text-[11px] text-muted mt-1">{fmt(v.expectedAt)}</p>
-                </div>
-              </div>
-              <div className="flex gap-2 mt-3 pt-3 border-t border-border">
-                <button onClick={() => handleCheckIn(v)} className="px-3 py-1.5 bg-indigo-600 text-white rounded text-[12px] font-medium hover:bg-indigo-700 flex items-center gap-1">
-                  <LogIn className="w-3.5 h-3.5" /> Check In
-                </button>
-                <button onClick={() => handleDeny(v.id)} className="px-3 py-1.5 border border-red-300 dark:border-red-500/30 text-red-600 dark:text-red-400 rounded text-[12px] font-medium hover:bg-red-50 dark:hover:bg-red-500/10 flex items-center gap-1">
-                  <Ban className="w-3.5 h-3.5" /> Deny
-                </button>
-              </div>
-            </div>
-          ))
-        )}
-
-        {tab === 'inside' && (
-          inside.length === 0 ? (
-            <div className="bg-card rounded-lg border border-border p-12 text-center">
-              <Users className="w-10 h-10 text-muted mx-auto mb-3" />
-              <p className="text-[13px] text-muted">No visitors currently inside</p>
-            </div>
-          ) : inside.map((v) => (
-            <div key={v.id} className="bg-card rounded-lg border border-border p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="text-[15px] font-semibold text-heading">{v.visitorName}</p>
-                    <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400">Inside</span>
-                  </div>
-                  <p className="text-[13px] text-muted mt-0.5">{v.visitorPhone}</p>
-                  <p className="text-[13px] text-sub mt-1">{propertyLabel} <span className="font-medium">{v.unitNumber}</span> - {v.residentName}</p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-[11px] text-muted">In since</p>
-                  <p className="text-[13px] font-medium text-heading">{fmt(v.checkInTime)}</p>
-                  <p className="text-[12px] font-medium text-orange-600 dark:text-orange-400 mt-0.5">{duration(v.checkInTime)}</p>
-                </div>
-              </div>
-              <div className="flex gap-2 mt-3 pt-3 border-t border-border">
-                <button onClick={() => handleCheckOut(v.id)} className="px-3 py-1.5 bg-indigo-600 text-white rounded text-[12px] font-medium hover:bg-indigo-700 flex items-center gap-1">
-                  <LogOut className="w-3.5 h-3.5" /> Check Out
-                </button>
-              </div>
-            </div>
-          ))
-        )}
-
-        {tab === 'daily-help' && (
-          dailyHelp.length === 0 ? (
-            <div className="bg-card rounded-lg border border-border p-12 text-center">
-              <UserCheck className="w-10 h-10 text-muted mx-auto mb-3" />
-              <p className="text-[13px] text-muted">No daily help registered</p>
-            </div>
-          ) : dailyHelp.map((dh) => (
-            <div key={dh.id} className="bg-card rounded-lg border border-border p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="text-[15px] font-semibold text-heading">{dh.name}</p>
-                    <span className={`px-2 py-0.5 rounded text-[11px] font-medium ${categoryBadge[dh.category] || categoryBadge.OTHER}`}>{dh.category}</span>
-                  </div>
-                  <p className="text-[13px] text-muted mt-0.5">{dh.phone || 'No phone'}</p>
-                  <p className="text-[13px] text-sub mt-1">{propertyLabel} <span className="font-medium">{dh.unitNumber}</span> - {dh.residentName}</p>
-                </div>
-                <div className="text-right shrink-0">
-                  {dh.timeSlot && <p className="text-[13px] font-medium text-heading">{dh.timeSlot}</p>}
-                  {dh.workingDays && <p className="text-[11px] text-muted mt-0.5">{dh.workingDays}</p>}
-                </div>
-              </div>
-              <div className="flex gap-2 mt-3 pt-3 border-t border-border">
-                <button onClick={() => handleDailyHelpCheckIn(dh.id)} className="px-3 py-1.5 bg-indigo-600 text-white rounded text-[12px] font-medium hover:bg-indigo-700 flex items-center gap-1">
-                  <UserCheck className="w-3.5 h-3.5" /> Mark Present
-                </button>
-              </div>
-            </div>
-          ))
-        )}
-
-        {tab === 'deliveries' && (
-          <>
-            <div className="flex justify-end mb-2">
-              <button onClick={() => setDeliveryOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded text-[12px] font-medium hover:bg-indigo-700 transition-colors">
-                <Truck className="w-3.5 h-3.5" /> Log Delivery
-              </button>
-            </div>
-            {deliveries.length === 0 ? (
-              <div className="bg-card rounded-lg border border-border p-12 text-center">
-                <Package className="w-10 h-10 text-muted mx-auto mb-3" />
-                <p className="text-[13px] text-muted">No pending deliveries</p>
-              </div>
-            ) : deliveries.map((dl) => (
-              <div key={dl.id} className="bg-card rounded-lg border border-border p-4">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="text-[15px] font-semibold text-heading">{dl.deliveryService}</p>
-                      <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400">Pending</span>
-                    </div>
-                    {dl.description && <p className="text-[13px] text-muted mt-0.5">{dl.description}</p>}
-                    <p className="text-[13px] text-sub mt-1">{propertyLabel} <span className="font-medium">{dl.unitNumber}</span> - {dl.residentName}</p>
-                  </div>
-                  <p className="text-[11px] text-muted shrink-0">{fmt(dl.createdAt)}</p>
-                </div>
-                <div className="flex gap-2 mt-3 pt-3 border-t border-border">
-                  <button onClick={() => { setPickupId(dl.id); setPickupOpen(true); }} className="px-3 py-1.5 bg-indigo-600 text-white rounded text-[12px] font-medium hover:bg-indigo-700 flex items-center gap-1">
-                    <Package className="w-3.5 h-3.5" /> Mark Picked Up
+                  <button onClick={() => openDenyModal(v.id)} className="px-2.5 py-1 border border-red-300 dark:border-red-500/30 text-red-600 dark:text-red-400 rounded text-[11px] font-medium hover:bg-red-50 dark:hover:bg-red-500/10 flex items-center gap-1">
+                    <Ban className="w-3 h-3" /> Deny
                   </button>
                 </div>
               </div>
             ))}
-          </>
+          </div>
+        )
+      )}
+
+      {tab === 'expected' && (
+        expected.length === 0 ? (
+          <div className="bg-card rounded-lg border border-border p-12 text-center">
+            <Clock className="w-10 h-10 text-muted mx-auto mb-3" />
+            <p className="text-[13px] text-muted">No expected visitors right now</p>
+          </div>
+        ) : viewMode === 'list' ? (
+          <div className="bg-card rounded-lg border border-border overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-[13px]">
+                <thead><tr className="border-b border-border bg-card-alt">
+                  <th className="text-left px-4 py-2.5 font-medium text-muted">Visitor</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted">Type</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted">{propertyLabel}</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted">Passcode</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted">Valid Till</th>
+                  <th className="px-4 py-2.5"></th>
+                </tr></thead>
+                <tbody className="divide-y divide-border">
+                  {expected.map((v) => (
+                    <tr key={v.id} className="hover:bg-card-hover">
+                      <td className="px-4 py-2.5">
+                        <p className="font-medium text-heading">{v.visitorName}</p>
+                        <p className="text-[11px] text-muted">{v.visitorPhone}</p>
+                      </td>
+                      <td className="px-4 py-2.5"><span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400">{v.visitorType}</span></td>
+                      <td className="px-4 py-2.5 text-sub">{v.unitNumber}</td>
+                      <td className="px-4 py-2.5"><span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 tracking-wider">{v.passcode}</span></td>
+                      <td className="px-4 py-2.5 text-muted">{fmt(v.validUntil)}</td>
+                      <td className="px-4 py-2.5">
+                        <div className="flex gap-1.5">
+                          <button onClick={() => handleCheckIn(v)} className="px-2.5 py-1 bg-indigo-600 text-white rounded text-[11px] font-medium hover:bg-indigo-700">Check In</button>
+                          <button onClick={() => openDenyModal(v.id)} className="px-2.5 py-1 border border-red-300 dark:border-red-500/30 text-red-600 dark:text-red-400 rounded text-[11px] font-medium hover:bg-red-50 dark:hover:bg-red-500/10">Deny</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+            {expected.map((v) => (
+              <div key={v.id} className="bg-card rounded-lg border border-border p-3.5">
+                <div className="flex items-start justify-between gap-2 mb-1.5">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-[14px] font-semibold text-heading truncate">{v.visitorName}</p>
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400 shrink-0">{v.visitorType}</span>
+                    </div>
+                    <p className="text-[12px] text-muted mt-0.5">{v.visitorPhone}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-[15px] font-bold font-mono text-indigo-600 dark:text-indigo-400 tracking-wider">{v.passcode}</p>
+                  </div>
+                </div>
+                <p className="text-[12px] text-sub">{propertyLabel} <span className="font-medium">{v.unitNumber}</span> - {v.residentName}</p>
+                {v.purpose && <p className="text-[11px] text-muted mt-0.5 truncate">{v.purpose}</p>}
+                <p className="text-[11px] text-muted mt-0.5">Valid till: {fmt(v.validUntil)}</p>
+                <div className="flex gap-2 mt-2.5 pt-2.5 border-t border-border">
+                  <button onClick={() => handleCheckIn(v)} className="px-2.5 py-1 bg-indigo-600 text-white rounded text-[11px] font-medium hover:bg-indigo-700 flex items-center gap-1">
+                    <LogIn className="w-3 h-3" /> Check In
+                  </button>
+                  <button onClick={() => openDenyModal(v.id)} className="px-2.5 py-1 border border-red-300 dark:border-red-500/30 text-red-600 dark:text-red-400 rounded text-[11px] font-medium hover:bg-red-50 dark:hover:bg-red-500/10 flex items-center gap-1">
+                    <Ban className="w-3 h-3" /> Deny
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      )}
+
+      {tab === 'inside' && (
+        inside.length === 0 ? (
+          <div className="bg-card rounded-lg border border-border p-12 text-center">
+            <Users className="w-10 h-10 text-muted mx-auto mb-3" />
+            <p className="text-[13px] text-muted">No visitors currently inside</p>
+          </div>
+        ) : viewMode === 'list' ? (
+          <div className="bg-card rounded-lg border border-border overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-[13px]">
+                <thead><tr className="border-b border-border bg-card-alt">
+                  <th className="text-left px-4 py-2.5 font-medium text-muted">Visitor</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted">{propertyLabel}</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted">In Since</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted">Duration</th>
+                  <th className="px-4 py-2.5"></th>
+                </tr></thead>
+                <tbody className="divide-y divide-border">
+                  {inside.map((v) => (
+                    <tr key={v.id} className="hover:bg-card-hover">
+                      <td className="px-4 py-2.5">
+                        <p className="font-medium text-heading">{v.visitorName}</p>
+                        <p className="text-[11px] text-muted">{v.visitorPhone}</p>
+                      </td>
+                      <td className="px-4 py-2.5 text-sub">{v.unitNumber} - {v.residentName}</td>
+                      <td className="px-4 py-2.5 text-muted">{fmt(v.checkInTime)}</td>
+                      <td className="px-4 py-2.5"><span className="font-medium text-orange-600 dark:text-orange-400">{duration(v.checkInTime)}</span></td>
+                      <td className="px-4 py-2.5">
+                        <button onClick={() => handleCheckOut(v.id)} className="px-2.5 py-1 bg-indigo-600 text-white rounded text-[11px] font-medium hover:bg-indigo-700">Check Out</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+            {inside.map((v) => (
+              <div key={v.id} className="bg-card rounded-lg border border-border p-3.5">
+                <div className="flex items-start justify-between gap-2 mb-1.5">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-[14px] font-semibold text-heading truncate">{v.visitorName}</p>
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400 shrink-0">Inside</span>
+                    </div>
+                    <p className="text-[12px] text-muted mt-0.5">{v.visitorPhone}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-[12px] font-medium text-orange-600 dark:text-orange-400">{duration(v.checkInTime)}</p>
+                  </div>
+                </div>
+                <p className="text-[12px] text-sub">{propertyLabel} <span className="font-medium">{v.unitNumber}</span> - {v.residentName}</p>
+                <p className="text-[11px] text-muted mt-0.5">In since {fmt(v.checkInTime)}</p>
+                <div className="flex gap-2 mt-2.5 pt-2.5 border-t border-border">
+                  <button onClick={() => handleCheckOut(v.id)} className="px-2.5 py-1 bg-indigo-600 text-white rounded text-[11px] font-medium hover:bg-indigo-700 flex items-center gap-1">
+                    <LogOut className="w-3 h-3" /> Check Out
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      )}
+
+      {tab === 'daily-help' && (
+        <>
+        <div className="flex justify-end mb-2">
+          <button onClick={() => setStaffOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded text-[12px] font-medium hover:bg-indigo-700 transition-colors">
+            <UserCheck className="w-3.5 h-3.5" /> Register Staff
+          </button>
+        </div>
+        {dailyHelp.length === 0 ? (
+          <div className="bg-card rounded-lg border border-border p-12 text-center">
+            <UserCheck className="w-10 h-10 text-muted mx-auto mb-3" />
+            <p className="text-[13px] text-muted">No daily help registered</p>
+          </div>
+        ) : viewMode === 'list' ? (
+          <div className="bg-card rounded-lg border border-border overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-[13px]">
+                <thead><tr className="border-b border-border bg-card-alt">
+                  <th className="text-left px-4 py-2.5 font-medium text-muted">Name</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted">Category</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted">{propertyLabel}</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted">Schedule</th>
+                  <th className="px-4 py-2.5"></th>
+                </tr></thead>
+                <tbody className="divide-y divide-border">
+                  {dailyHelp.map((dh) => (
+                    <tr key={dh.id} className="hover:bg-card-hover">
+                      <td className="px-4 py-2.5">
+                        <p className="font-medium text-heading">{dh.name}</p>
+                        <p className="text-[11px] text-muted">{dh.phone || 'No phone'}</p>
+                      </td>
+                      <td className="px-4 py-2.5"><span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${categoryBadge[dh.category] || categoryBadge.OTHER}`}>{dh.category}</span></td>
+                      <td className="px-4 py-2.5 text-sub">{dh.unitNumber} - {dh.residentName}</td>
+                      <td className="px-4 py-2.5 text-muted">{dh.timeSlot || '-'}{dh.workingDays ? ` (${dh.workingDays})` : ''}</td>
+                      <td className="px-4 py-2.5">
+                        <button onClick={() => handleDailyHelpCheckIn(dh.id)} className="px-2.5 py-1 bg-indigo-600 text-white rounded text-[11px] font-medium hover:bg-indigo-700">Present</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+            {dailyHelp.map((dh) => (
+              <div key={dh.id} className="bg-card rounded-lg border border-border p-3.5">
+                <div className="flex items-start gap-2.5 mb-1.5">
+                  {dh.photo ? (
+                    <img src={dh.photo} alt={dh.name} className="w-10 h-10 rounded-full object-cover shrink-0" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-card-alt flex items-center justify-center shrink-0">
+                      <UserCheck className="w-4 h-4 text-muted" />
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-[14px] font-semibold text-heading truncate">{dh.name}</p>
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium shrink-0 ${categoryBadge[dh.category] || categoryBadge.OTHER}`}>{dh.category}</span>
+                    </div>
+                    <p className="text-[12px] text-muted">{dh.phone || 'No phone'}</p>
+                  </div>
+                </div>
+                <p className="text-[12px] text-sub mt-1">{propertyLabel} <span className="font-medium">{dh.unitNumber}</span> - {dh.residentName}</p>
+                {dh.timeSlot && <p className="text-[11px] text-muted mt-0.5">{dh.timeSlot}{dh.workingDays ? ` (${dh.workingDays})` : ''}</p>}
+                <div className="flex gap-2 mt-2.5 pt-2.5 border-t border-border">
+                  <button onClick={() => handleDailyHelpCheckIn(dh.id)} className="px-2.5 py-1 bg-indigo-600 text-white rounded text-[11px] font-medium hover:bg-indigo-700 flex items-center gap-1">
+                    <UserCheck className="w-3 h-3" /> Mark Present
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
-      </div>
+        </>
+      )}
+
+      {tab === 'deliveries' && (
+        <>
+          <div className="flex justify-end mb-2">
+            <button onClick={() => setDeliveryOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded text-[12px] font-medium hover:bg-indigo-700 transition-colors">
+              <Truck className="w-3.5 h-3.5" /> Log Delivery
+            </button>
+          </div>
+          {deliveries.length === 0 ? (
+            <div className="bg-card rounded-lg border border-border p-12 text-center">
+              <Package className="w-10 h-10 text-muted mx-auto mb-3" />
+              <p className="text-[13px] text-muted">No pending deliveries</p>
+            </div>
+          ) : viewMode === 'list' ? (
+            <div className="bg-card rounded-lg border border-border overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-[13px]">
+                  <thead><tr className="border-b border-border bg-card-alt">
+                    <th className="text-left px-4 py-2.5 font-medium text-muted">Service</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted">Description</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted">{propertyLabel}</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted">Logged</th>
+                    <th className="px-4 py-2.5"></th>
+                  </tr></thead>
+                  <tbody className="divide-y divide-border">
+                    {deliveries.map((dl) => (
+                      <tr key={dl.id} className="hover:bg-card-hover">
+                        <td className="px-4 py-2.5">
+                          <p className="font-medium text-heading">{dl.deliveryService}</p>
+                        </td>
+                        <td className="px-4 py-2.5 text-muted">{dl.description || '-'}</td>
+                        <td className="px-4 py-2.5 text-sub">{dl.unitNumber} - {dl.residentName}</td>
+                        <td className="px-4 py-2.5 text-muted">{fmt(dl.createdAt)}</td>
+                        <td className="px-4 py-2.5">
+                          <button onClick={() => { setPickupId(dl.id); setPickupOpen(true); }} className="px-2.5 py-1 bg-indigo-600 text-white rounded text-[11px] font-medium hover:bg-indigo-700">Picked Up</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+              {deliveries.map((dl) => (
+                <div key={dl.id} className="bg-card rounded-lg border border-border p-3.5">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <p className="text-[14px] font-semibold text-heading truncate">{dl.deliveryService}</p>
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400 shrink-0">Pending</span>
+                  </div>
+                  {dl.description && <p className="text-[12px] text-muted truncate">{dl.description}</p>}
+                  <p className="text-[12px] text-sub mt-1">{propertyLabel} <span className="font-medium">{dl.unitNumber}</span> - {dl.residentName}</p>
+                  <p className="text-[11px] text-muted mt-0.5">{fmt(dl.createdAt)}</p>
+                  <div className="flex gap-2 mt-2.5 pt-2.5 border-t border-border">
+                    <button onClick={() => { setPickupId(dl.id); setPickupOpen(true); }} className="px-2.5 py-1 bg-indigo-600 text-white rounded text-[11px] font-medium hover:bg-indigo-700 flex items-center gap-1">
+                      <Package className="w-3 h-3" /> Picked Up
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
 
       {/* Walk-in Modal */}
       <Modal open={walkInOpen} onClose={() => setWalkInOpen(false)} title="Request Resident Approval" full>
@@ -581,6 +806,39 @@ export default function GuardDashboard() {
         </form>
       </Modal>
 
+      {/* Deny Entry Modal */}
+      <Modal open={denyOpen} onClose={() => { setDenyOpen(false); setDenyId(null); setDenyNotes(''); }} title="Deny Entry">
+        <div className="p-6 space-y-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 bg-red-100 dark:bg-red-500/15 rounded-lg flex items-center justify-center shrink-0">
+              <Ban className="w-5 h-5 text-red-600 dark:text-red-400" />
+            </div>
+            <div>
+              <h3 className="text-[15px] font-semibold text-heading">Deny Visitor Entry</h3>
+              <p className="text-[13px] text-muted mt-0.5">This will deny the visitor's entry. You can optionally provide a reason.</p>
+            </div>
+          </div>
+          <div>
+            <label className="block text-[13px] font-medium text-heading mb-1">Reason for denial (optional)</label>
+            <textarea
+              value={denyNotes}
+              onChange={(e) => setDenyNotes(e.target.value)}
+              className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading resize-none"
+              rows={3}
+              placeholder="Enter reason..."
+            />
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button onClick={() => { setDenyOpen(false); setDenyId(null); setDenyNotes(''); }} className="flex-1 py-2.5 border border-border rounded-xl text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">
+              Cancel
+            </button>
+            <button onClick={handleDeny} disabled={denySaving} className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-[13px] font-medium hover:bg-red-700 disabled:opacity-50 transition-colors inline-flex items-center justify-center gap-2">
+              {denySaving ? <ButtonSpinner /> : <><Ban className="w-4 h-4" /> Deny Entry</>}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
       {/* Pickup Modal */}
       <Modal open={pickupOpen} onClose={() => { setPickupOpen(false); setPickupId(null); setReceivedBy(''); }} title="Mark Delivery Picked Up" full>
         <div className="flex items-center justify-between mb-6">
@@ -602,6 +860,70 @@ export default function GuardDashboard() {
           <div className="space-y-6 md:sticky md:top-4 md:self-start"></div>
         </div>
       </Modal>
+
+      {/* Staff Registration Modal */}
+      <Modal open={staffOpen} onClose={() => setStaffOpen(false)} title="Register Staff for Property" full>
+        <form onSubmit={handleAddStaff}>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-[14px] font-semibold text-heading">Staff Details</h2>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={() => setStaffOpen(false)} className="px-4 py-2 border border-border rounded text-[13px] font-medium text-sub hover:bg-card-hover transition-colors">Cancel</button>
+              <button type="submit" disabled={staffSaving || !staffForm.name || !staffForm.unitNumber} className="px-4 py-2 bg-indigo-600 text-white rounded text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors inline-flex items-center gap-2">
+                {staffSaving ? <><ButtonSpinner /> Registering...</> : <><Save className="w-4 h-4" /> Register Staff</>}
+              </button>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6">
+            <div className="space-y-6">
+              <div className="bg-card border border-border rounded-xl p-6 space-y-4">
+                <div>
+                  <label className="block text-[13px] font-medium text-heading mb-1">{propertyLabel} *</label>
+                  <select value={staffForm.unitNumber} onChange={(e) => setStaffForm({ ...staffForm, unitNumber: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" required>
+                    <option value="">Select {propertyLabel.toLowerCase()}</option>
+                    {properties.map(p => <option key={p.unitNumber} value={p.unitNumber}>{p.unitNumber}{p.ownerName ? ` - ${p.ownerName}` : ''}</option>)}
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[13px] font-medium text-heading mb-1">Phone</label>
+                    <input type="tel" value={staffForm.phone} onChange={(e) => setStaffForm({ ...staffForm, phone: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" placeholder="Mobile number" />
+                  </div>
+                  <div>
+                    <label className="block text-[13px] font-medium text-heading mb-1">Time Slot</label>
+                    <input type="text" value={staffForm.timeSlot} onChange={(e) => setStaffForm({ ...staffForm, timeSlot: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" placeholder="e.g. 08:00-10:00" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[13px] font-medium text-heading mb-1">Category</label>
+                  <select value={staffForm.category} onChange={(e) => setStaffForm({ ...staffForm, category: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading">
+                    <option value="MAID">Maid</option>
+                    <option value="COOK">Cook</option>
+                    <option value="DRIVER">Driver</option>
+                    <option value="GARDENER">Gardener</option>
+                    <option value="NANNY">Nanny</option>
+                    <option value="TUTOR">Tutor</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-6 md:sticky md:top-4 md:self-start">
+              <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+                <div>
+                  <label className="block text-[13px] font-medium text-heading mb-1">Name *</label>
+                  <input type="text" value={staffForm.name} onChange={(e) => setStaffForm({ ...staffForm, name: e.target.value })} className="w-full px-3 py-2 bg-input-bg border border-input-border rounded-lg text-[13px] text-heading" required placeholder="Staff full name" />
+                </div>
+                <PhotoPicker preview={null} onChange={(file) => setStaffPhotoFile(file)} icon={UserCheck} bare />
+              </div>
+              <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-xl p-4">
+                <p className="text-[12px] text-amber-700 dark:text-amber-400">This staff will need approval from the {propertyLabel.toLowerCase()} owner before they can enter.</p>
+              </div>
+            </div>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
-}
+});
+
+export default GuardDashboard;

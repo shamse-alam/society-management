@@ -13,9 +13,9 @@
 const { test, expect } = require('../helpers/fixtures');
 
 test.describe('Guard — Dashboard', () => {
-  test('guard can view guard dashboard', async ({ guardPage }) => {
-    await guardPage.goto('/guard-dashboard');
-    await expect(guardPage).toHaveURL(/\/guard-dashboard/);
+  test('guard can view home page with guard dashboard', async ({ guardPage }) => {
+    await guardPage.goto('/home');
+    await expect(guardPage).toHaveURL(/\/home/);
     await guardPage.waitForLoadState('networkidle');
   });
 });

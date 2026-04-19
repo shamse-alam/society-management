@@ -1,0 +1,16 @@
+# Build output
+backend/target/
+
+# Uploads
+backend/uploads/
+
+# E2E
+e2e/.auth/
+e2e/reports/
+e2e/test-results/
+frontend/test-results/
+
+# IDE
+.idea/
+*.iml
+.DS_Store

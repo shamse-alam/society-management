@@ -68,9 +68,9 @@ test.describe('Visitor Management', () => {
     await adminPage.waitForLoadState('domcontentloaded');
   });
 
-  test('guard dashboard renders', async ({ guardPage }) => {
-    await guardPage.goto('/guard-dashboard');
-    await expect(guardPage).toHaveURL(/\/guard-dashboard/);
+  test('guard home page renders', async ({ guardPage }) => {
+    await guardPage.goto('/home');
+    await expect(guardPage).toHaveURL(/\/home/);
     await guardPage.waitForLoadState('domcontentloaded');
   });
 });

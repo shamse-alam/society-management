@@ -94,6 +94,33 @@ const test = base.extend({
   secretaryAPI:  async ({}, use) => { await use(apiAs('secretary')); },
   treasurerAPI:  async ({}, use) => { await use(apiAs('treasurer')); },
   committeeAPI:  async ({}, use) => { await use(apiAs('committee')); },
+
+  // Multi-role combo API clients
+  guardAdminAPI:          async ({}, use) => { await use(apiAs('guard_admin')); },
+  presidentSecretaryAPI:  async ({}, use) => { await use(apiAs('president_secretary')); },
+  treasurerAccountantAPI: async ({}, use) => { await use(apiAs('treasurer_accountant')); },
+  guardResidentAPI:       async ({}, use) => { await use(apiAs('guard_resident')); },
+  presidentTreasurerAPI:  async ({}, use) => { await use(apiAs('president_treasurer')); },
+
+  // Multi-role combo pages
+  guardAdminPage: async ({ browser }, use) => {
+    const ctx = await contextForRole(browser, 'guard_admin');
+    const page = await ctx.newPage();
+    await use(page);
+    await ctx.close();
+  },
+  presidentSecretaryPage: async ({ browser }, use) => {
+    const ctx = await contextForRole(browser, 'president_secretary');
+    const page = await ctx.newPage();
+    await use(page);
+    await ctx.close();
+  },
+  guardResidentPage: async ({ browser }, use) => {
+    const ctx = await contextForRole(browser, 'guard_resident');
+    const page = await ctx.newPage();
+    await use(page);
+    await ctx.close();
+  },
 });
 
 module.exports = { test, expect };

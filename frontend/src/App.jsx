@@ -5,7 +5,7 @@ import Layout from './components/Layout';
 import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
-import Dashboard from './pages/Dashboard';
+import Home from './pages/Home';
 import UserManagement from './pages/UserManagement';
 import PropertyManagement from './pages/PropertyManagement';
 import MyProfile from './pages/MyProfile';
@@ -23,10 +23,8 @@ import NoticeBoard from './pages/NoticeBoard';
 import Complaints from './pages/Complaints';
 import ComplaintManagement from './pages/ComplaintManagement';
 import Polls from './pages/Polls';
-import UserDashboard from './pages/UserDashboard';
 import AmenityManagement from './pages/AmenityManagement';
 import SettingsPage from './pages/Settings';
-import GuardDashboard from './pages/GuardDashboard';
 import VisitorPreApprove from './pages/VisitorPreApprove';
 import MyDailyHelp from './pages/MyDailyHelp';
 import AdminVisitorLogs from './pages/AdminVisitorLogs';
@@ -47,29 +45,21 @@ import PayMaintenance from './pages/PayMaintenance';
 import MembershipPayment from './pages/MembershipPayment';
 import CorpusPayment from './pages/CorpusPayment';
 import FundReleases from './pages/FundReleases';
+import Refunds from './pages/Refunds';
 import { ModalProvider } from './context/ModalContext';
 import { ConfirmProvider } from './context/ConfirmContext';
 
-function ProtectedRoute({ children, adminOnly = false, guardOnly = false }) {
-  const { user, isAdmin, isGuard, hasRole } = useAuth();
+function ProtectedRoute({ children, adminOnly = false }) {
+  const { user, isAdmin, hasRole } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
-  if (guardOnly && !isGuard && !hasRole('GUARD')) return <Navigate to="/" replace />;
-  if (adminOnly && !isAdmin && !hasRole('PRESIDENT') && !hasRole('SECRETARY') && !hasRole('ACCOUNTANT') && !hasRole('TREASURER')) return <Navigate to="/user-dashboard" replace />;
-  return <Layout>{children}</Layout>;
-}
-
-function GuardRoute({ children }) {
-  const { user, hasRole } = useAuth();
-  if (!user) return <Navigate to="/login" replace />;
-  if (!hasRole('GUARD')) return <Navigate to="/" replace />;
+  if (adminOnly && !isAdmin && !hasRole('PRESIDENT') && !hasRole('SECRETARY') && !hasRole('ACCOUNTANT') && !hasRole('TREASURER')) return <Navigate to="/home" replace />;
   return <Layout>{children}</Layout>;
 }
 
 function DefaultRedirect() {
-  const { user, isAdmin, isGuard, hasRole } = useAuth();
-  if (isGuard) return <Navigate to="/guard-dashboard" replace />;
-  if (isAdmin || hasRole('PRESIDENT') || hasRole('SECRETARY')) return <Navigate to="/dashboard" replace />;
-  return <Navigate to="/user-dashboard" replace />;
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  return <Navigate to="/home" replace />;
 }
 
 function AppRoutes() {
@@ -81,7 +71,11 @@ function AppRoutes() {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
 
-      <Route path="/dashboard" element={<ProtectedRoute adminOnly><Dashboard /></ProtectedRoute>} />
+      <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+      {/* Legacy redirects */}
+      <Route path="/dashboard" element={<Navigate to="/home" replace />} />
+      <Route path="/user-dashboard" element={<Navigate to="/home" replace />} />
+      <Route path="/guard-dashboard" element={<Navigate to="/home" replace />} />
       <Route path="/users" element={<ProtectedRoute adminOnly><UserManagement /></ProtectedRoute>} />
       <Route path="/users/:id" element={<ProtectedRoute adminOnly><OwnerDetail /></ProtectedRoute>} />
       <Route path="/properties" element={<ProtectedRoute adminOnly><PropertyManagement /></ProtectedRoute>} />
@@ -103,6 +97,8 @@ function AppRoutes() {
       <Route path="/vendors/:id" element={<ProtectedRoute adminOnly><VendorDetail /></ProtectedRoute>} />
       {/* Fund Releases (admin only) */}
       <Route path="/fund-releases" element={<ProtectedRoute adminOnly><FundReleases /></ProtectedRoute>} />
+      {/* Refunds (admin only) */}
+      <Route path="/refunds" element={<ProtectedRoute adminOnly><Refunds /></ProtectedRoute>} />
       {/* Reports (admin only) */}
       <Route path="/balance-sheet" element={<ProtectedRoute adminOnly><BalanceSheet /></ProtectedRoute>} />
       <Route path="/gst-report" element={<ProtectedRoute adminOnly><GSTReport /></ProtectedRoute>} />
@@ -111,9 +107,6 @@ function AppRoutes() {
       <Route path="/complaints" element={<ProtectedRoute><Complaints /></ProtectedRoute>} />
       <Route path="/complaint-management" element={<ProtectedRoute adminOnly><ComplaintManagement /></ProtectedRoute>} />
       <Route path="/polls" element={<ProtectedRoute><Polls /></ProtectedRoute>} />
-      <Route path="/user-dashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
-      {/* Guard */}
-      <Route path="/guard-dashboard" element={<GuardRoute><GuardDashboard /></GuardRoute>} />
       {/* Visitor Management */}
       <Route path="/visitors" element={<ProtectedRoute><VisitorPreApprove /></ProtectedRoute>} />
       <Route path="/daily-help" element={<ProtectedRoute><MyDailyHelp /></ProtectedRoute>} />

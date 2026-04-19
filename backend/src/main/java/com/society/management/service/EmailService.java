@@ -8,6 +8,9 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
 @Service
 public class EmailService {
 
@@ -77,6 +80,37 @@ public class EmailService {
             log.warn("Failed to send welcome email to {}. Reset link: {}", toEmail, resetLink);
             log.warn("Email error: {}", e.getMessage());
             return false;
+        }
+    }
+
+    public void sendVisitorPasscodeEmail(String toEmail, String visitorName, String passcode,
+                                          LocalDateTime validUntil, String residentName, String unitNumber) {
+        String societyName = societyConfigService.getOrCreate().getSocietyName();
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd MMM yyyy, hh:mm a");
+
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(getFromAddress());
+            message.setTo(toEmail);
+            message.setSubject(societyName + " — Visitor Pre-Approval Passcode");
+
+            StringBuilder body = new StringBuilder();
+            body.append("Hello ").append(visitorName).append(",\n\n");
+            body.append("You have been pre-approved for a visit to ").append(societyName).append(".\n\n");
+            body.append("Your entry passcode: ").append(passcode).append("\n\n");
+            body.append("Details:\n");
+            body.append("  Resident: ").append(residentName).append("\n");
+            if (unitNumber != null) body.append("  Unit: ").append(unitNumber).append("\n");
+            if (validUntil != null) body.append("  Valid until: ").append(validUntil.format(fmt)).append("\n");
+            body.append("\nPlease share this passcode with the security guard at the gate for entry.\n");
+            body.append("This passcode will automatically expire after the validity period.\n\n");
+            body.append("Regards,\n").append(societyName).append(" Admin");
+
+            message.setText(body.toString());
+            mailSender.send(message);
+            log.info("Visitor passcode email sent to {} for visitor {}", toEmail, visitorName);
+        } catch (Exception e) {
+            log.warn("Failed to send visitor passcode email to {}: {}", toEmail, e.getMessage());
         }
     }
 

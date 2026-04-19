@@ -24,6 +24,7 @@ public class DataCleanupService {
     private final PollVoteRepository pollVoteRepository;
     private final PollOptionRepository pollOptionRepository;
     private final PropertyHistoryRepository propertyHistoryRepository;
+    private final PaymentRefundRepository paymentRefundRepository;
     private final FundReleaseRepository fundReleaseRepository;
     private final NotificationRepository notificationRepository;
     private final VendorBankAccountRepository vendorBankAccountRepository;
@@ -57,6 +58,7 @@ public class DataCleanupService {
             PollVoteRepository pollVoteRepository,
             PollOptionRepository pollOptionRepository,
             PropertyHistoryRepository propertyHistoryRepository,
+            PaymentRefundRepository paymentRefundRepository,
             FundReleaseRepository fundReleaseRepository,
             NotificationRepository notificationRepository,
             VendorBankAccountRepository vendorBankAccountRepository,
@@ -88,6 +90,7 @@ public class DataCleanupService {
         this.pollVoteRepository = pollVoteRepository;
         this.pollOptionRepository = pollOptionRepository;
         this.propertyHistoryRepository = propertyHistoryRepository;
+        this.paymentRefundRepository = paymentRefundRepository;
         this.fundReleaseRepository = fundReleaseRepository;
         this.notificationRepository = notificationRepository;
         this.vendorBankAccountRepository = vendorBankAccountRepository;
@@ -127,6 +130,7 @@ public class DataCleanupService {
         deleted.put("pollVotes", deleteAll(pollVoteRepository));
         deleted.put("pollOptions", deleteAll(pollOptionRepository));
         deleted.put("propertyHistory", deleteAll(propertyHistoryRepository));
+        deleted.put("paymentRefunds", deleteAll(paymentRefundRepository));
         deleted.put("fundReleases", deleteAll(fundReleaseRepository));
         deleted.put("notifications", deleteAll(notificationRepository));
         deleted.put("vendorBankAccounts", deleteAll(vendorBankAccountRepository));

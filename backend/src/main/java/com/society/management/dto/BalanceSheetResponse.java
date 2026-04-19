@@ -16,6 +16,11 @@ public class BalanceSheetResponse {
     private List<IncomeLineItem> incomeItems;
     private List<ExpenseResponse> expenseItems;
 
+    // Refund fields
+    private BigDecimal totalRefunds;
+    private int refundCount;
+    private List<RefundEntry> refundBreakdown;
+
     // Reserve fund fields
     private BigDecimal operationalIncome;
     private BigDecimal totalReserveFunds;
@@ -59,5 +64,14 @@ public class BalanceSheetResponse {
         private BigDecimal collected;
         private BigDecimal released;
         private BigDecimal locked;
+    }
+
+    @Data
+    @AllArgsConstructor
+    public static class RefundEntry {
+        private String type;
+        private BigDecimal amount;
+        private int count;
+        private boolean gstApplicable;
     }
 }

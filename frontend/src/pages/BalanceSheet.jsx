@@ -2,7 +2,7 @@ import { ButtonSpinner } from '../components/Spinner';
 import { TableSkeleton } from '../components/Skeleton';
 import { useState, useEffect, useCallback } from 'react';
 import { adminAPI } from '../services/api';
-import { IndianRupee, Filter, FileDown, FileSpreadsheet, Building2, Printer, CalendarDays, ChevronDown, Lock, Unlock } from 'lucide-react';
+import { IndianRupee, Filter, FileDown, FileSpreadsheet, Building2, Printer, CalendarDays, ChevronDown, Lock, Unlock, RotateCcw } from 'lucide-react';
 import { useSocietyConfig } from '../context/SocietyConfigContext';
 import { getTypeColor } from '../utils/typeColors';
 import jsPDF from 'jspdf';
@@ -35,6 +35,7 @@ export default function BalanceSheet() {
   const [tab, setTab] = useState('summary');
   const [incomeOpen, setIncomeOpen] = useState(false);
   const [expenseOpen, setExpenseOpen] = useState(false);
+  const [refundOpen, setRefundOpen] = useState(false);
 
   const fetchData = useCallback(async (fd, td) => {
     setLoading(true);
@@ -100,6 +101,25 @@ export default function BalanceSheet() {
     });
     y = doc.lastAutoTable.finalY + 8;
 
+    // Refunds / Reversals
+    if (data.refundBreakdown && data.refundBreakdown.length > 0) {
+      doc.setFontSize(11); doc.setFont(undefined, 'bold');
+      doc.text('Less: Refunds / Reversals', 14, y); y += 2;
+      autoTable(doc, {
+        startY: y,
+        head: [['Sl.', 'Income Type Reversed', 'Count', 'Amount (Rs.)']],
+        body: [
+          ...data.refundBreakdown.map((item, i) => [i + 1, item.type.replace(/_/g, ' '), item.count, fmt(item.amount)]),
+          [{ content: 'Total Refunds', colSpan: 3, styles: { fontStyle: 'bold', halign: 'right' } }, { content: fmt(data.totalRefunds), styles: { fontStyle: 'bold' } }],
+        ],
+        theme: 'grid', styles: { fontSize: 9, cellPadding: 2 },
+        headStyles: { fillColor: [249, 115, 22], textColor: 255, fontStyle: 'bold' },
+        columnStyles: { 0: { halign: 'center', cellWidth: 12 }, 3: { halign: 'right' } },
+        margin: { left: 14, right: 14 },
+      });
+      y = doc.lastAutoTable.finalY + 8;
+    }
+
     // Schedule C: Reserve Fund Summary
     if (data.reserveBreakdown && data.reserveBreakdown.length > 0) {
       doc.setFontSize(11); doc.setFont(undefined, 'bold');
@@ -126,6 +146,9 @@ export default function BalanceSheet() {
     doc.text(`Operational Income: Rs. ${fmt(data.operationalIncome ?? data.totalIncome)}`, 14, y); y += 5;
     doc.text(`Released Reserve Funds: Rs. ${fmt(data.releasedReserveFunds ?? 0)}`, 14, y); y += 5;
     doc.text(`Total Expenditure: Rs. ${fmt(data.totalExpense)}`, 14, y); y += 5;
+    if (Number(data.totalRefunds ?? 0) > 0) {
+      doc.text(`Less: Refunds / Reversals: Rs. ${fmt(data.totalRefunds)}`, 14, y); y += 5;
+    }
     doc.setFont(undefined, 'bold');
     doc.text(`Available Balance: Rs. ${fmt(data.availableBalance ?? data.balance)}`, 14, y); y += 5;
     if (data.lockedReserveFunds > 0) {
@@ -187,6 +210,13 @@ export default function BalanceSheet() {
       ...data.expenseBreakdown.map(i => [i.category.replace(/_/g, ' '), i.count, Number(i.amount)]),
       ['Total Expenditure', '', Number(data.totalExpense)],
       [],
+      ...(data.refundBreakdown && data.refundBreakdown.length > 0 ? [
+        ['REFUNDS / REVERSALS'],
+        ['Income Type Reversed', 'Count', 'Amount (Rs.)'],
+        ...data.refundBreakdown.map(i => [i.type.replace(/_/g, ' '), i.count, Number(i.amount)]),
+        ['Total Refunds', '', Number(data.totalRefunds)],
+        [],
+      ] : []),
       ...(data.reserveBreakdown && data.reserveBreakdown.length > 0 ? [
         ['RESERVE FUND SUMMARY'],
         ['Fund Type', 'Collected (Rs.)', 'Released (Rs.)', 'Locked (Rs.)'],
@@ -198,6 +228,7 @@ export default function BalanceSheet() {
       ['Operational Income', '', Number(data.operationalIncome ?? data.totalIncome)],
       ['Released Reserve Funds', '', Number(data.releasedReserveFunds ?? 0)],
       ['Total Expenditure', '', Number(data.totalExpense)],
+      ...(Number(data.totalRefunds ?? 0) > 0 ? [['Less: Refunds / Reversals', '', Number(data.totalRefunds)]] : []),
       ['Available Balance', '', Number(data.availableBalance ?? data.balance)],
       ...(data.lockedReserveFunds > 0 ? [['Locked Reserve Funds (not included)', '', Number(data.lockedReserveFunds)]] : []),
     ];
@@ -271,7 +302,7 @@ export default function BalanceSheet() {
             </div>
 
             {/* Summary Figures */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-x divide-dashed divide-border border-b border-dashed border-border">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-dashed divide-border border-b border-dashed border-border">
               <div className="p-5 text-center">
                 <p className="text-[10px] font-medium text-muted uppercase tracking-wider">Operational Income</p>
                 <p className="text-[18px] font-bold text-green-600 dark:text-green-400 mt-1.5"><IndianRupee className="w-4 h-4 inline" />{fmt(data.operationalIncome ?? data.totalIncome)}</p>
@@ -288,7 +319,13 @@ export default function BalanceSheet() {
                 <p className="text-[10px] font-medium text-muted uppercase tracking-wider">Total Expenditure</p>
                 <p className="text-[18px] font-bold text-red-500 dark:text-red-400 mt-1.5"><IndianRupee className="w-4 h-4 inline" />{fmt(data.totalExpense)}</p>
               </div>
-              <div className="p-5 text-center col-span-2 sm:col-span-3 lg:col-span-1 border-t lg:border-t-0 border-dashed border-border">
+              {Number(data.totalRefunds ?? 0) > 0 && (
+                <div className="p-5 text-center">
+                  <p className="text-[10px] font-medium text-muted uppercase tracking-wider flex items-center justify-center gap-1"><RotateCcw className="w-3 h-3" /> Refunds</p>
+                  <p className="text-[18px] font-bold text-orange-500 dark:text-orange-400 mt-1.5"><IndianRupee className="w-4 h-4 inline" />{fmt(data.totalRefunds)}</p>
+                </div>
+              )}
+              <div className={`p-5 text-center ${Number(data.totalRefunds ?? 0) > 0 ? '' : 'col-span-2 sm:col-span-3 lg:col-span-2'} border-t lg:border-t-0 border-dashed border-border`}>
                 <p className="text-[10px] font-medium text-muted uppercase tracking-wider">Available Balance</p>
                 <p className={`text-[18px] font-bold mt-1.5 ${Number(data.availableBalance ?? data.balance) >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-red-500 dark:text-red-400'}`}><IndianRupee className="w-4 h-4 inline" />{fmt(data.availableBalance ?? data.balance)}</p>
               </div>
@@ -376,6 +413,50 @@ export default function BalanceSheet() {
               </div>
             </div>
 
+            {/* Schedule B₁: Refunds / Reversals */}
+            {data.refundBreakdown && data.refundBreakdown.length > 0 && (
+              <div className="p-8 border-b border-dashed border-border">
+                <h4 className="text-[13px] font-semibold text-heading mb-4 flex items-center gap-2">
+                  Less: Refunds / Reversals
+                  <RotateCcw className="w-3.5 h-3.5 text-orange-500" />
+                  <span className="text-[11px] font-normal text-muted">({data.refundCount} credit note{data.refundCount !== 1 ? 's' : ''})</span>
+                </h4>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr>
+                        <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-muted bg-card-alt rounded-l-lg">Sl.</th>
+                        <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-muted bg-card-alt">Income Type Reversed</th>
+                        <th className="text-center px-4 py-2.5 text-[11px] font-semibold text-muted bg-card-alt">Count</th>
+                        <th className="text-center px-4 py-2.5 text-[11px] font-semibold text-muted bg-card-alt">GST Applicable</th>
+                        <th className="text-right px-4 py-2.5 text-[11px] font-semibold text-muted bg-card-alt rounded-r-lg">Amount (₹)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.refundBreakdown.map((item, i) => (
+                        <tr key={item.type} className="border-b border-dashed border-border">
+                          <td className="px-4 py-2.5 text-[13px] text-muted">{i + 1}</td>
+                          <td className="px-4 py-2.5 text-[13px] font-medium text-heading">
+                            <span className="inline-flex items-center gap-1.5">
+                              <RotateCcw className="w-3 h-3 text-orange-500" />
+                              {item.type.replace(/_/g, ' ')}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2.5 text-[13px] text-muted text-center">{item.count}</td>
+                          <td className="px-4 py-2.5 text-[13px] text-muted text-center">{item.gstApplicable ? 'Yes' : 'No'}</td>
+                          <td className="px-4 py-2.5 text-[13px] text-orange-600 dark:text-orange-400 text-right font-medium">- {fmt(item.amount)}</td>
+                        </tr>
+                      ))}
+                      <tr>
+                        <td colSpan={4} className="px-4 py-3 text-[13px] font-bold text-heading text-right">Total Refunds</td>
+                        <td className="px-4 py-3 text-[14px] font-bold text-orange-600 dark:text-orange-400 text-right">- {fmt(data.totalRefunds)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
             {/* Schedule C: Reserve Fund Summary */}
             {data.reserveBreakdown && data.reserveBreakdown.length > 0 && (
               <div className="p-8 border-b border-dashed border-border">
@@ -436,6 +517,12 @@ export default function BalanceSheet() {
                     <span className="text-muted">Total Expenditure</span>
                     <span className="font-medium text-red-500 dark:text-red-400">- {fmt(data.totalExpense)}</span>
                   </div>
+                  {Number(data.totalRefunds ?? 0) > 0 && (
+                    <div className="flex justify-between text-[13px]">
+                      <span className="text-muted flex items-center gap-1"><RotateCcw className="w-3 h-3" /> Less: Refunds / Reversals</span>
+                      <span className="font-medium text-orange-500 dark:text-orange-400">- {fmt(data.totalRefunds)}</span>
+                    </div>
+                  )}
                   <div className="border-t border-border pt-2 mt-2">
                     <div className="flex justify-between">
                       <span className="text-[14px] font-bold text-heading">Available Balance</span>
@@ -463,7 +550,7 @@ export default function BalanceSheet() {
                 <li>Period: {periodLabel}.</li>
                 <li>Corpus and Membership funds are treated as reserve funds and are locked by default.</li>
                 <li>Reserve funds can only be released through the approval workflow (Reserve Funds page).</li>
-                <li>Available Balance = Operational Income + Released Reserves - Total Expenditure.</li>
+                <li>Available Balance = Operational Income + Released Reserves - Total Expenditure - Refunds.</li>
                 <li>For any discrepancies, please contact the society management office.</li>
               </ul>
             </div>

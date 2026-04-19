@@ -45,6 +45,32 @@ const TEST_USERS = {
     email: 'e2e_committee@test.com', phone: '+91-9100000007', unitNumber: 'A-107',
     roles: ['RESIDENT', 'COMMITTEE_MEMBER'],
   },
+  // ── Multi-role combo users ──
+  guard_admin: {
+    username: 'e2e_guard_admin', password: 'welcome', firstName: 'E2E', lastName: 'GuardAdmin',
+    email: 'e2e_guard_admin@test.com', phone: '+91-9100000008', unitNumber: 'A-108',
+    roles: ['GUARD', 'ADMIN'],
+  },
+  president_secretary: {
+    username: 'e2e_pres_sec', password: 'welcome', firstName: 'E2E', lastName: 'PresSec',
+    email: 'e2e_pres_sec@test.com', phone: '+91-9100000009', unitNumber: 'A-109',
+    roles: ['RESIDENT', 'PRESIDENT', 'SECRETARY'],
+  },
+  treasurer_accountant: {
+    username: 'e2e_treas_acct', password: 'welcome', firstName: 'E2E', lastName: 'TreasAcct',
+    email: 'e2e_treas_acct@test.com', phone: '+91-9100000010', unitNumber: 'A-110',
+    roles: ['RESIDENT', 'TREASURER', 'ACCOUNTANT'],
+  },
+  guard_resident: {
+    username: 'e2e_guard_res', password: 'welcome', firstName: 'E2E', lastName: 'GuardRes',
+    email: 'e2e_guard_res@test.com', phone: '+91-9100000011', unitNumber: 'A-111',
+    roles: ['GUARD', 'RESIDENT'],
+  },
+  president_treasurer: {
+    username: 'e2e_pres_treas', password: 'welcome', firstName: 'E2E', lastName: 'PresTreas',
+    email: 'e2e_pres_treas@test.com', phone: '+91-9100000012', unitNumber: 'A-112',
+    roles: ['RESIDENT', 'PRESIDENT', 'TREASURER'],
+  },
 };
 
 // ── Tokens cache ──────────────────────────────────────────────────────

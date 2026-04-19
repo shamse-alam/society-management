@@ -9,11 +9,14 @@ public class DailyHelpResponse {
     private String name;
     private String phone;
     private String category;
+    private String photo;
     private String unitNumber;
     private String residentName;
     private String workingDays;
     private String timeSlot;
     private boolean active;
+    private String status;
+    private String addedByName;
     private String startDate;
     private String createdAt;
 
@@ -23,11 +26,14 @@ public class DailyHelpResponse {
         r.setName(dh.getName());
         r.setPhone(dh.getPhone());
         r.setCategory(dh.getCategory().name());
+        r.setPhoto(dh.getPhoto());
         r.setUnitNumber(dh.getProperty() != null ? dh.getProperty().getUnitNumber() : dh.getUser().getUnitNumber());
         r.setResidentName(dh.getUser().getFullName());
         r.setWorkingDays(dh.getWorkingDays());
         r.setTimeSlot(dh.getTimeSlot());
         r.setActive(dh.isActive());
+        r.setStatus(dh.getStatus() != null ? dh.getStatus().name() : "APPROVED");
+        r.setAddedByName(dh.getAddedBy() != null ? dh.getAddedBy().getFullName() : null);
         r.setStartDate(dh.getStartDate() != null ? dh.getStartDate().toString() : null);
         r.setCreatedAt(dh.getCreatedAt() != null ? dh.getCreatedAt().toString() : null);
         return r;

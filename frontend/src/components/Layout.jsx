@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { Building2, Users, LayoutDashboard, LogOut, Menu, CreditCard, CalendarDays, ClipboardList, ChevronDown, Plus, Home, FileBarChart, Wallet, Receipt, Store, Sun, Moon, FileText, Bell, Search, X, Settings, Megaphone, MessageSquare, BarChart3, Shield, UserPlus, UserCheck, Car, ParkingSquare, FolderOpen, MessageCircle, Calendar, Truck, Cog, ArrowLeft, Landmark, IndianRupee, LifeBuoy, Lock } from 'lucide-react';
+import { Building2, Users, LayoutDashboard, LogOut, Menu, CreditCard, CalendarDays, ClipboardList, ChevronDown, Plus, Home, FileBarChart, Wallet, Receipt, Store, Sun, Moon, FileText, Bell, Search, X, Settings, Megaphone, MessageSquare, BarChart3, Shield, UserPlus, UserCheck, Car, ParkingSquare, FolderOpen, MessageCircle, Calendar, Truck, Cog, ArrowLeft, Landmark, IndianRupee, LifeBuoy, Lock, RotateCcw } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import UserAvatar from './UserAvatar';
 import NotificationDropdown from './NotificationDropdown';
@@ -67,6 +67,7 @@ export default function Layout({ children }) {
   const { user, logout, isAdmin, isGuard, hasRole } = useAuth();
   const canManageAccounts = isAdmin || hasRole('ACCOUNTANT') || hasRole('TREASURER') || hasRole('PRESIDENT');
   const canManageSociety = isAdmin || hasRole('PRESIDENT') || hasRole('SECRETARY');
+  const hasNonGuardRole = user?.roles?.some(r => r !== 'GUARD') || false;
   const { dark, toggle } = useTheme();
   const { config: societyConfig } = useSocietyConfig();
   const { modal } = useModalHeader();
@@ -76,7 +77,7 @@ export default function Layout({ children }) {
   const propertyLabel = societyConfig.propertyLabel || 'Property';
   const p = location.pathname;
   const [accountsOpen, setAccountsOpen] = useState(
-    p === '/payments' || p === '/expenses' || p === '/vendors' || p.startsWith('/vendors/') || p === '/balance-sheet' || p === '/gst-report' || p === '/defaulter-report' || p === '/fund-releases'
+    p === '/payments' || p === '/expenses' || p === '/vendors' || p.startsWith('/vendors/') || p === '/balance-sheet' || p === '/gst-report' || p === '/defaulter-report' || p === '/fund-releases' || p === '/refunds'
   );
   const [userPaymentsOpen, setUserPaymentsOpen] = useState(
     p === '/pay-maintenance' || p === '/pay-membership' || p === '/pay-corpus'
@@ -102,7 +103,7 @@ export default function Layout({ children }) {
 
   const handleLogout = () => { logout(); navigate('/login'); };
   const isActive = (path) => p === path;
-  const isAccountsSection = p === '/payments' || p === '/expenses' || p === '/vendors' || p.startsWith('/vendors/') || p === '/balance-sheet' || p === '/gst-report' || p === '/defaulter-report' || p === '/fund-releases';
+  const isAccountsSection = p === '/payments' || p === '/expenses' || p === '/vendors' || p.startsWith('/vendors/') || p === '/balance-sheet' || p === '/gst-report' || p === '/defaulter-report' || p === '/fund-releases' || p === '/refunds';
   const isUserPaymentsSection = p === '/pay-maintenance' || p === '/pay-membership' || p === '/pay-corpus';
   const isSocietySection = p === '/users' || p === '/properties' || p === '/household' || p === '/vehicles' || p === '/parking' || p === '/move-requests' || p.startsWith('/users/');
   const isCommunitySection = p === '/notices' || p === '/polls' || p === '/emergency' || p === '/documents' || p.startsWith('/forum') || p === '/events';
@@ -112,12 +113,8 @@ export default function Layout({ children }) {
   const isMyPropertySection = p === '/household' || p === '/my-vehicles' || p === '/my-move-requests';
   const isSettingsSection = p === '/settings' || p === '/society-settings';
 
-  const mainItems = isGuard ? [
-    { path: '/guard-dashboard', label: 'Guard Dashboard', icon: Shield },
-  ] : canManageSociety ? [
-    { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  ] : [
-    { path: '/user-dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  const mainItems = [
+    { path: '/home', label: 'Home', icon: LayoutDashboard },
   ];
 
   const accountsSubItems = [
@@ -126,6 +123,7 @@ export default function Layout({ children }) {
     { path: '/vendors', label: 'Vendors', icon: Store },
     { path: '/balance-sheet', label: 'Receipts & Payments', icon: Wallet },
     { path: '/fund-releases', label: 'Reserve Funds', icon: Lock },
+    { path: '/refunds', label: 'Refunds', icon: RotateCcw },
     { path: '/gst-report', label: 'GST Statement', icon: FileText },
     { path: '/defaulter-report', label: 'Defaulter Report', icon: FileBarChart },
   ];
@@ -160,11 +158,10 @@ export default function Layout({ children }) {
     ...(canManageSociety ? [{ path: '/booking-requests', label: 'Reservation Requests', icon: ClipboardList }] : []),
   ];
 
-  const visitorSubItems = canManageSociety ? [
-    { path: '/visitor-logs', label: 'Visitor Logs', icon: ClipboardList },
-  ] : [
+  const visitorSubItems = [
     { path: '/visitors', label: 'Pre-Approve', icon: UserPlus },
     { path: '/daily-help', label: 'My Daily Help', icon: UserCheck },
+    ...(canManageSociety ? [{ path: '/visitor-logs', label: 'Visitor Logs', icon: ClipboardList }] : []),
   ];
 
   const navLinkClass = (active) =>
@@ -227,7 +224,7 @@ export default function Layout({ children }) {
             ))}
 
             {/* Accounts — Admin, Accountant, Treasurer, President */}
-            {canManageAccounts && !isGuard && (
+            {canManageAccounts && (
               <>
                 {sectionLabel('Accounts')}
                 <button onClick={() => setAccountsOpen(!accountsOpen)} className={parentBtnClass(isAccountsSection)}>
@@ -248,8 +245,8 @@ export default function Layout({ children }) {
               </>
             )}
 
-            {/* Payments (non-admin residents) */}
-            {!canManageAccounts && !isGuard && (
+            {/* Payments (ADMIN sees all, or any RESIDENT) */}
+            {(isAdmin || hasRole('RESIDENT')) && (
               <>
                 {sectionLabel('Payments')}
                 <button onClick={() => setUserPaymentsOpen(!userPaymentsOpen)} className={parentBtnClass(isUserPaymentsSection)}>
@@ -271,7 +268,7 @@ export default function Layout({ children }) {
             )}
 
             {/* Society — Admin, President, Secretary */}
-            {canManageSociety && !isGuard && (
+            {canManageSociety && (
               <>
                 {sectionLabel('Society')}
                 <button onClick={() => setSocietyOpen(!societyOpen)} className={parentBtnClass(isSocietySection)}>
@@ -292,8 +289,8 @@ export default function Layout({ children }) {
               </>
             )}
 
-            {/* Community (not guard) */}
-            {!isGuard && (
+            {/* Community (all non-guard-only users) */}
+            {hasNonGuardRole && (
               <>
                 {sectionLabel('Community')}
                 <button onClick={() => setCommunityOpen(!communityOpen)} className={parentBtnClass(isCommunitySection)}>
@@ -314,8 +311,8 @@ export default function Layout({ children }) {
               </>
             )}
 
-            {/* Helpdesk (not guard) — standalone complaints section */}
-            {!isGuard && (
+            {/* Helpdesk — standalone complaints section */}
+            {hasNonGuardRole && (
               <Link
                 to={canManageSociety ? '/complaint-management' : '/complaints'}
                 onClick={() => setSidebarOpen(false)}
@@ -325,8 +322,8 @@ export default function Layout({ children }) {
               </Link>
             )}
 
-            {/* Facilities (not guard) */}
-            {!isGuard && (
+            {/* Facilities */}
+            {hasNonGuardRole && (
               <>
                 {sectionLabel('Facilities')}
                 <button onClick={() => setBookingsOpen(!bookingsOpen)} className={parentBtnClass(isBookingsSection)}>
@@ -347,8 +344,8 @@ export default function Layout({ children }) {
               </>
             )}
 
-            {/* Visitors (not guard) */}
-            {!isGuard && (
+            {/* Visitors */}
+            {hasNonGuardRole && (
               <>
                 {sectionLabel('Visitors')}
                 <button onClick={() => setVisitorsOpen(!visitorsOpen)} className={parentBtnClass(isVisitorsSection)}>
@@ -369,8 +366,16 @@ export default function Layout({ children }) {
               </>
             )}
 
-            {/* My Property (non-admin residents) */}
-            {!canManageSociety && !isGuard && (
+            {/* Guard-only: Daily Help */}
+            {!hasNonGuardRole && isGuard && (
+              <Link to="/daily-help" onClick={() => setSidebarOpen(false)} className={navLinkClass(isActive('/daily-help'))}>
+                <UserCheck className="w-[20px] h-[20px] shrink-0" />
+                Daily Help
+              </Link>
+            )}
+
+            {/* My Property (ADMIN sees all, or any RESIDENT) */}
+            {(isAdmin || hasRole('RESIDENT')) && (
               <>
                 {sectionLabel(`My ${propertyLabel}`)}
                 <button onClick={() => setMyPropertyOpen(!myPropertyOpen)} className={parentBtnClass(isMyPropertySection)}>
@@ -394,8 +399,8 @@ export default function Layout({ children }) {
               </>
             )}
 
-            {/* Settings (all users except guard) */}
-            {!isGuard && (
+            {/* Settings */}
+            {hasNonGuardRole && (
               <>
                 {sectionLabel('Settings')}
                 <button onClick={() => setSettingsOpen(!settingsOpen)} className={parentBtnClass(isSettingsSection)}>
@@ -463,7 +468,7 @@ export default function Layout({ children }) {
             </button>
 
             {/* Notifications */}
-            {!isGuard && <NotificationDropdown />}
+            {hasNonGuardRole && <NotificationDropdown />}
 
             {/* User avatar with hover popup */}
             <UserAvatarPopup user={user} onLogout={handleLogout} />

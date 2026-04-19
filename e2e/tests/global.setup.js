@@ -21,7 +21,8 @@ test('seed test data via API', async () => {
 });
 
 // Save browser auth state for each role we need to test via UI
-const UI_ROLES = ['admin', 'guard', 'resident', 'accountant', 'president', 'secretary', 'treasurer', 'committee'];
+const UI_ROLES = ['admin', 'guard', 'resident', 'accountant', 'president', 'secretary', 'treasurer', 'committee',
+  'guard_admin', 'president_secretary', 'treasurer_accountant', 'guard_resident', 'president_treasurer'];
 
 for (const role of UI_ROLES) {
   test(`save auth state for ${role}`, async ({ page }) => {
