@@ -121,7 +121,7 @@ public class DataCleanupService {
     @Transactional
     public Map<String, Long> cleanupAll() {
         Map<String, Long> deleted = new LinkedHashMap<>();
-        log.warn("DATA CLEANUP initiated — deleting all data except admin/guard users");
+        log.warn("DATA CLEANUP initiated — deleting all data except admin user");
 
         // Tier 1: Leaf entities (no dependents)
         deleted.put("visitorParking", deleteAll(visitorParkingRepository));
@@ -168,12 +168,12 @@ public class DataCleanupService {
         // Tier 7: Properties
         deleted.put("properties", deleteAll(propertyRepository));
 
-        // Tier 8: Users — keep admin and guard
+        // Tier 8: Users — keep only admin
         long usersBefore = userRepository.count();
         userRepository.findAll().stream()
                 .filter(u -> {
                     String roles = u.getRoles() != null ? u.getRoles().toUpperCase() : "";
-                    return !roles.contains("ADMIN") && !roles.contains("GUARD");
+                    return !roles.contains("ADMIN");
                 })
                 .forEach(userRepository::delete);
         long usersAfter = userRepository.count();
